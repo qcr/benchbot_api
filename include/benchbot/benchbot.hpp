@@ -1,7 +1,11 @@
+#ifndef __BENCHBOT_H
+#define __BENCHBOT_H
 
 #include <jsoncpp/json/json.h>
 #include <opencv2/opencv.hpp>
 #include <curl/curl.h>
+#include "grid_map.hpp"
+
 
 class BenchBot {
     public:
@@ -12,6 +16,7 @@ class BenchBot {
     Json::Value send(std::string route, Json::Value data);
 
     cv::Mat getImage(std::string route="image");
+    GridMap getGridMap(std::string route="map");
 
     bool isDone();
 
@@ -32,3 +37,5 @@ class BenchBot {
     std::string message;
     std::string uri;
 };
+
+#endif

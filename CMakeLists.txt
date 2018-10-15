@@ -21,13 +21,14 @@ pkg_check_modules(JSONCPP jsoncpp)
 link_libraries(${JSONCPP_LIBRARIES})
 
 find_package(CURL REQUIRED)
-find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED opencv_core opencv_highgui opencv_imgcodecs)
 
 # Set up include directory
 include_directories(include)
 
 # Build program
-add_library(benchbot SHARED src/benchbot.cpp)
+add_library(benchbot SHARED src/benchbot.cpp src/grid_map.cpp)
+
 target_link_libraries(benchbot ${JSONCPP_LIBRARIES} ${CURL_LIBRARIES} ${OpenCV_LIBS})
 
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/benchbot.pc.cmakein

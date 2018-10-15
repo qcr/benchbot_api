@@ -9,5 +9,5 @@ Description: benchbot middleware api
 Version: @benchbot_VERSION_MAJOR@.@benchbot_VERSION_MINOR@
 
 Requires:
-Libs: -L${libdir} -L${sharedlibdir} -lcurl -ljsoncpp -lopencv_core -lopencv_highgui
+Libs: -L${libdir} -L${sharedlibdir} -lcurl -ljsoncpp -lopencv_core -lopencv_highgui -lopencv_imgproc
 Cflags: -I${includedir}

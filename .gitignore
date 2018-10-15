@@ -1,0 +1,6 @@
+build
+.vscode
+
+python/build
+python/dist
+python/benchbot.egg-info

@@ -3,6 +3,7 @@
 #include <jsoncpp/json/json.h>
 #include <opencv2/opencv.hpp>
 #include <curl/curl.h>
+#include <vector>
 
 static const std::string base64_chars = 
              "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -88,6 +89,11 @@ cv::Mat BenchBot::getImage(std::string route) {
     std::vector<char> data(buffer.c_str(), buffer.c_str() + buffer.length());
     
     return cv::imdecode(data, cv::IMREAD_COLOR);
+}
+
+GridMap BenchBot::getGridMap(std::string route) {
+    Json::Value root = get(route);
+    return GridMap(root["info"], root["data"], root["header"]);
 }
 
 bool BenchBot::isDone() {
