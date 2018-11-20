@@ -21,7 +21,7 @@ pkg_check_modules(JSONCPP jsoncpp)
 link_libraries(${JSONCPP_LIBRARIES})
 
 find_package(CURL REQUIRED)
-find_package(OpenCV REQUIRED opencv_core opencv_highgui opencv_imgcodecs)
+find_package(OpenCV REQUIRED opencv_core opencv_highgui opencv_imgproc)
 
 # Set up include directory
 include_directories(include)
