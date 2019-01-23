@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='benchbot',
-    version='0.1.4',
+    version='0.1.5',
     author='Gavin Suddrey',
     author_email='g.suddrey@qut.edu.au',
     description='Benchbot provides a simple python-based wrapper for use with the QUT-based BenchBot service',

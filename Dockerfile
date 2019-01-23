@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     wget \
     git \
-    && apt-get clean && rm -rf /etc/apt/*
+    && apt-get clean
 
 RUN mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=/usr .. && make && make install && cd .. && rm -rf build
 RUN cd python && \
