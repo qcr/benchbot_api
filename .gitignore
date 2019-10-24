@@ -1,8 +1,9 @@
 build
 .vscode
 
+*.pyc
 python/build
 python/dist
 python/benchbot.egg-info
 
-.sw*
+*.sw*
