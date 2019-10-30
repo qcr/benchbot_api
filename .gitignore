@@ -2,6 +2,7 @@ build
 .vscode
 
 *.pyc
+__pycache__
 python/build
 python/dist
 python/benchbot.egg-info
