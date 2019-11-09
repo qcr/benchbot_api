@@ -1,7 +1,6 @@
 import base64
 import cv2
 import numpy as np
-import pudb
 
 
 def decode_ros_image(data):
