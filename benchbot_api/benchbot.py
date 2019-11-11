@@ -2,6 +2,9 @@ from enum import Enum, unique
 import importlib
 import requests
 
+DEFAULT_ADDRESS = 'benchbot_supervisor'
+DEFAULT_PORT = 10000
+
 
 class _UnexpectedResponseError(requests.RequestException):
 
@@ -20,7 +23,8 @@ class BenchBot(object):
         EXPLICIT = 2
 
     def __init__(self,
-                 supervisor_address='http://localhost:10000/',
+                 supervisor_address='http://' + DEFAULT_ADDRESS + ':' +
+                 str(DEFAULT_PORT) + '/',
                  auto_start=True):
         self.supervisor_address = supervisor_address
         self._connection_callbacks = {}
@@ -66,7 +70,8 @@ class BenchBot(object):
     def _attempt_connection_imports(connection_data):
         if 'callback_api' in connection_data:
             x = connection_data['callback_api'].rsplit('.', 1)
-            return getattr(importlib.import_module(x[0]), x[1])
+            return getattr(importlib.import_module('benchbot_api.' + x[0]),
+                           x[1])
         return None
 
     @property
@@ -76,6 +81,14 @@ class BenchBot(object):
     @property
     def observations(self):
         return self._receive('observations', BenchBot.RouteType.CONFIG)
+
+    @property
+    def task_details(self):
+        return {
+            k: v for k, v in zip(['type', 'control_mode', 'localisation_mode'],
+                                 self._receive('task_name', BenchBot.RouteType.
+                                               CONFIG).split(':'))
+        }
 
     def finish(self, result):
         # TODO
