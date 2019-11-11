@@ -98,6 +98,10 @@ class BenchBot(object):
         # TODO
         return False
 
+    def reset(self):
+        # TODO
+        return self.step(None)[0]
+
     def start(self):
         # Establish connection (throw an error if we can't find the supervisor)
         try:
