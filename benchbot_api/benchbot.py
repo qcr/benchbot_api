@@ -18,7 +18,7 @@ class BenchBot(object):
 
     @unique
     class RouteType(Enum):
-        ROUTE = 0,
+        CONNECTION = 0,
         CONFIG = 1,
         EXPLICIT = 2
 
@@ -31,10 +31,10 @@ class BenchBot(object):
         if auto_start:
             self.start()
 
-    def _build_address(self, route_name, route_type=RouteType.ROUTE):
+    def _build_address(self, route_name, route_type=RouteType.CONNECTION):
         base = self.supervisor_address + (
             '' if self.supervisor_address.endswith('/') else '/')
-        if route_type == BenchBot.RouteType.ROUTE:
+        if route_type == BenchBot.RouteType.CONNECTION:
             return base + 'connections/' + route_name
         elif route_type == BenchBot.RouteType.CONFIG:
             return base + 'config/' + route_name
@@ -45,7 +45,7 @@ class BenchBot(object):
                 "Cannot build address from invalid route type: %s" %
                 route_type)
 
-    def _receive(self, route_name=None, route_type=RouteType.ROUTE):
+    def _receive(self, route_name=None, route_type=RouteType.CONNECTION):
         try:
             resp = requests.get(self._build_address(route_name, route_type))
             if resp.status_code >= 300:
@@ -55,7 +55,10 @@ class BenchBot(object):
             raise requests.ConnectionError(
                 "Failed to establish a connection to BenchBot supervisor")
 
-    def _send(self, route_name=None, data=None, route_type=RouteType.ROUTE):
+    def _send(self,
+              route_name=None,
+              data=None,
+              route_type=RouteType.CONNECTION):
         data = {} if data is None else data
         try:
             resp = requests.get(self._build_address(route_name, route_type),
@@ -64,7 +67,8 @@ class BenchBot(object):
                 raise _UnexpectedResponseError(resp.status_code)
         except:
             raise requests.ConnectionError(
-                "Failed to establish a connection to BenchBot supervisor")
+                "Failed to establish a connection to BenchBot supervisor with "
+                "input data: %s, %s: %s" % (route_name, route_type.name, data))
 
     @staticmethod
     def _attempt_connection_imports(connection_data):
@@ -99,7 +103,8 @@ class BenchBot(object):
         return False
 
     def reset(self):
-        # TODO
+        # TODO need to somehow give the supervisor control over the running
+        # simulator instance (reset should kill & restart simulator)
         return self.step(None)[0]
 
     def start(self):
@@ -118,15 +123,18 @@ class BenchBot(object):
                 'robot', BenchBot.RouteType.CONFIG).items()
         }
 
-    def step(self, action):
-        # Perform the requested action
-        # TODO
+    def step(self, action, **action_kwargs):
+        # Perform the requested actio
+        if action is not None:
+            print("Sending action '%s' with args: %s" %
+                  (action, action_kwargs))
+            self._send(action, action_kwargs, BenchBot.RouteType.CONNECTION)
 
         # Retrieve and return an updated set of observations
         # TODO is there anything meaningful to give back as reward or info???
         raw_os = {o: self._receive(o) for o in self.observations}
         return ({
             k: self._connection_callbacks[k](v)
+            if self._connection_callbacks[k] is not None else v
             for k, v in raw_os.items()
-            if self._connection_callbacks[k] is not None
         }, 0, '')
