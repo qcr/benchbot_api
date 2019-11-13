@@ -17,3 +17,13 @@ commands = benchbot.get('command') # Get a list of possible actions for the comm
 
 image = benchbot.getImage() # Get an image (standard opencv numpy array)
 ```
+
+For full examples of solutions that use the BenchBot API, see the [benchbot_examples](https://bitbucket.org/acrv/benchbot_examples/src/master/) repository.
+
+## Installation
+
+Use pip to install BenchBot API & dependencies (from inside this repository's root directory):
+
+```bash
+pip install .
+```
