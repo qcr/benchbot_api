@@ -8,14 +8,16 @@ BenchBot is used as part of the ACRV Scene Understanding Challenge. For further 
 Getting started with a robot using BenchBot is as simple as:
 
 ```python
-from benchbot import BenchBot
+from benchbot_api.benchbot import BenchBot
 
 benchbot = BenchBot() # Create a benchbot instance
 
-routes = benchbot.get() # Get a list of available routes
-commands = benchbot.get('command') # Get a list of possible actions for the command route
+action_list = benchbot.actions  # Get a list of available actions
+observation_list = benchbot.get('command') # Get a list of observations
 
-image = benchbot.getImage() # Get an image (standard opencv numpy array)
+# Perform an action, & get observations, reward, info from performing the
+# action
+observations, reward, info = benchbot.step(action_list[0])
 ```
 
 For full examples of solutions that use the BenchBot API, see the [benchbot_examples](https://bitbucket.org/acrv/benchbot_examples/src/master/) repository.
@@ -26,4 +28,10 @@ Use pip to install BenchBot API & dependencies (from inside this repository's ro
 
 ```bash
 pip install .
+```
+
+To get the latest published version without cloning this repository, simply:
+
+```bash
+pip install benchbot_api
 ```
