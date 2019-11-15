@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(name='benchbot_api',
-      version='0.1.2',
+      version='0.1.3',
       author='Ben Talbot',
       author_email='b.talbot@qut.edu.au',
       description=
@@ -12,7 +12,7 @@ setup(name='benchbot_api',
       long_description=long_description,
       long_description_content_type='text/markdown',
       packages=find_packages(),
-      install_requires=['numpy', 'opencv-python', 'requests'],
+      install_requires=['numpy', 'opencv-python', 'requests', 'jsonpickle'],
       classifiers=(
           "Programming Language :: Python :: 2",
           "Programming Language :: Python :: 2.7",
