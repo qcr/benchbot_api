@@ -67,13 +67,16 @@ class ObservationVisualiser(object):
         plt.draw()
         self.fig.canvas.start_event_loop(0.0001)
 
-    def visualise(self, observations):
+    def visualise(self, observations, step_count=None):
         if self.fig is None:
             plt.ion()
             self.fig, self.axs = plt.subplots(2, 2)
             self.axs[1, 1].remove()
             self.axs[1, 1] = self.fig.add_subplot(2, 2, 4, projection='3d')
-            self.fig.canvas.set_window_title("Agent Observations")
+
+        self.fig.canvas.set_window_title("Agent Observations" + (
+            "" if step_count is None else " (step # %d)" % step_count))
+
         self.axs[0, 0].clear()
         self.axs[0, 0].imshow(observations['image_rgb'])
         self.axs[0, 0].get_xaxis().set_visible(False)
