@@ -1,4 +1,6 @@
-numpy
-requests
-opencv-python
 jsonpickle
+matplotlib
+numpy
+opencv-python
+requests
+scipy
