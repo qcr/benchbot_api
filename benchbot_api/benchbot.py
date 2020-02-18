@@ -68,7 +68,7 @@ class BenchBot(object):
         except:
             raise requests.ConnectionError(
                 "Failed to establish a connection to BenchBot supervisor with "
-                "input data: %s, %s: %s" % (route_name, route_type.name, data))
+                "input data: %s, %s, %s" % (route_name, route_type.name, data))
 
     @staticmethod
     def _attempt_connection_imports(connection_data):
