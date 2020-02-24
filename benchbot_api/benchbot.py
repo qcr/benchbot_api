@@ -14,13 +14,22 @@ class _UnexpectedResponseError(requests.RequestException):
             "(HTTP status code: %d)" % http_status_code, *args, **kwargs)
 
 
+@unique
+class ActionResult(Enum):
+    SUCCESS = 0,
+    FINISHED = 1,
+    COLLISION = 2
+
+
 class BenchBot(object):
 
     @unique
     class RouteType(Enum):
         CONNECTION = 0,
         CONFIG = 1,
-        EXPLICIT = 2
+        SIMULATOR = 2,
+        STATUS = 3,
+        EXPLICIT = 4
 
     def __init__(self,
                  supervisor_address='http://' + DEFAULT_ADDRESS + ':' +
@@ -38,6 +47,10 @@ class BenchBot(object):
             return base + 'connections/' + route_name
         elif route_type == BenchBot.RouteType.CONFIG:
             return base + 'config/' + route_name
+        elif route_type == BenchBot.RouteType.SIMULATOR:
+            return base + 'simulator/' + route_name
+        elif route_type == BenchBot.RouteType.STATUS:
+            return base + 'status/' + route_name
         elif route_type == BenchBot.RouteType.EXPLICIT:
             return base + route_name
         else:
@@ -94,18 +107,13 @@ class BenchBot(object):
                                                CONFIG).split(':'))
         }
 
-    def finish(self, result):
-        # TODO
-        pass
-
-    def is_done(self):
-        # TODO
-        return False
-
     def reset(self):
-        # TODO need to somehow give the supervisor control over the running
-        # simulator instance (reset should kill & restart simulator)
-        return self.step(None)[0]
+        # Only restart the supervisor if it is in a dirty state
+        if self._receive('is_dirty', BenchBot.RouteType.SIMULATOR)['is_dirty']:
+            self._receive('restart', BenchBot.RouteType.SIMULATOR
+                         )  # This should probably be a send...
+
+        return self.step(None)
 
     def start(self):
         # Establish connection (throw an error if we can't find the supervisor)
@@ -124,17 +132,25 @@ class BenchBot(object):
         }
 
     def step(self, action, **action_kwargs):
-        # Perform the requested actio
+        # Perform the requested action
         if action is not None:
             print("Sending action '%s' with args: %s" %
                   (action, action_kwargs))
             self._send(action, action_kwargs, BenchBot.RouteType.CONNECTION)
 
+        # Derive action_result (TODO should probably not be this flimsy...)
+        action_result = ActionResult.SUCCESS
+        if self._receive('is_collided',
+                         BenchBot.RouteType.SIMULATOR)['is_collided']:
+            action_result = ActionResult.COLLISION
+        elif self._receive('is_finished',
+                           BenchBot.RouteType.STATUS)['is_finished']:
+            action_result = ActionResult.FINISHED
+
         # Retrieve and return an updated set of observations
-        # TODO is there anything meaningful to give back as reward or info???
         raw_os = {o: self._receive(o) for o in self.observations}
         return ({
             k: self._connection_callbacks[k](v)
             if self._connection_callbacks[k] is not None else v
             for k, v in raw_os.items()
-        }, 0, '')
+        }, action_result)
