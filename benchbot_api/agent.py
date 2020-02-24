@@ -18,12 +18,15 @@ class Agent(object):
         return False
 
     @abstractmethod
-    def pick_action(self, observations):
+    def pick_action(self, observations, action_list):
         """
         Method should return a selected action from the list provided by
         'Benchbot.actions', & a dictionary of argument values required for the
-        action. The follwoing example would move the robot forward 10cm:
+        action. The following example would move the robot forward 10cm:
             return 'move_distance', {'distance': 0.1}
+
+        This method is also where your agent should also use the observations
+        to update its semantic understanding of the world.
 
         The list of available actions returned from 'Benchbot.actions' will
         change based on the mode selected, & the last action_result returned by
