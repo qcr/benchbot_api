@@ -1,7 +1,8 @@
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 
 
 class Agent(object):
+    __metaclass__ = ABCMeta
 
     @abstractmethod
     def is_done(self, action_result):
