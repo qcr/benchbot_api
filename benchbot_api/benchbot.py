@@ -3,6 +3,8 @@ import importlib
 import os
 import requests
 
+from agent import Agent
+
 DEFAULT_ADDRESS = 'benchbot_supervisor'
 DEFAULT_PORT = 10000
 
@@ -35,9 +37,16 @@ class BenchBot(object):
         EXPLICIT = 4
 
     def __init__(self,
+                 agent,
                  supervisor_address='http://' + DEFAULT_ADDRESS + ':' +
                  str(DEFAULT_PORT) + '/',
                  auto_start=True):
+        if not isinstance(agent, Agent):
+            raise ValueError("BenchBot received an agent of type '%s' "
+                             "which is not an instance of '%s'." %
+                             (agent.__class__.__name__, Agent.__name__))
+        self.agent = agent
+
         self.supervisor_address = supervisor_address
         self._connection_callbacks = {}
         if auto_start:
@@ -98,8 +107,9 @@ class BenchBot(object):
     def actions(self):
         return ([] if self._receive(
             'is_collided', BenchBot.RouteType.SIMULATOR)['is_collided'] or
-                self._receive('is_finished', BenchBot.RouteType.STATUS) else
-                ('actions', BenchBot.RouteType.CONFIG))
+                self._receive('is_finished',
+                              BenchBot.RouteType.STATUS)['is_finished'] else
+                self._receive('actions', BenchBot.RouteType.CONFIG))
 
     @property
     def observations(self):
@@ -126,6 +136,14 @@ class BenchBot(object):
                          )  # This should probably be a send...
 
         return self.step(None)
+
+    def run(self):
+        observations, action_result = self.reset()
+        while not self.agent.is_done(action_result):
+            action, action_args = self.agent.pick_action(
+                observations, self.actions)
+            observations, action_result = self.step(action, **action_args)
+        self.agent.save_result(self.result_filename)
 
     def start(self):
         # Establish connection (throw an error if we can't find the supervisor)
