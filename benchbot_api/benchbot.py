@@ -125,8 +125,8 @@ class BenchBot(object):
 
     @property
     def result_filename(self):
-        if not os.path.exists(os.path.pardir(RESULT_LOCATION)):
-            os.makedirs(os.path.pardir(RESULT_LOCATION))
+        if not os.path.exists(os.path.dirname(RESULT_LOCATION)):
+            os.makedirs(os.path.dirname(RESULT_LOCATION))
         return os.path.join(RESULT_LOCATION)
 
     def reset(self):
