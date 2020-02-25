@@ -3,7 +3,7 @@ import importlib
 import os
 import requests
 
-from agent import Agent
+from .agent import Agent
 
 DEFAULT_ADDRESS = 'benchbot_supervisor'
 DEFAULT_PORT = 10000
