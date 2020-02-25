@@ -1,6 +1,0 @@
-jsonpickle
-matplotlib
-numpy
-opencv-python
-requests
-scipy
