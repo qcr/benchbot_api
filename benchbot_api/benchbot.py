@@ -1,9 +1,12 @@
 from enum import Enum, unique
 import importlib
+import os
 import requests
 
 DEFAULT_ADDRESS = 'benchbot_supervisor'
 DEFAULT_PORT = 10000
+
+RESULT_LOCATION = '/tmp/benchbot_result'
 
 
 class _UnexpectedResponseError(requests.RequestException):
@@ -93,7 +96,10 @@ class BenchBot(object):
 
     @property
     def actions(self):
-        return self._receive('actions', BenchBot.RouteType.CONFIG)
+        return ([] if self._receive(
+            'is_collided', BenchBot.RouteType.SIMULATOR)['is_collided'] or
+                self._receive('is_finished', BenchBot.RouteType.STATUS) else
+                ('actions', BenchBot.RouteType.CONFIG))
 
     @property
     def observations(self):
@@ -106,6 +112,12 @@ class BenchBot(object):
                                  self._receive('task_name', BenchBot.RouteType.
                                                CONFIG).split(':'))
         }
+
+    @property
+    def result_filename(self):
+        if not os.path.exists(os.path.pardir(RESULT_LOCATION)):
+            os.makedirs(os.path.pardir(RESULT_LOCATION))
+        return os.path.join(RESULT_LOCATION)
 
     def reset(self):
         # Only restart the supervisor if it is in a dirty state
