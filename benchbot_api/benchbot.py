@@ -184,6 +184,31 @@ class BenchBot(object):
         }
 
     def step(self, action, **action_kwargs):
+        # Dictionary of mappings between action (str), and args (list of str)
+        VALID_ACTIONS = { 'move_next' : [],
+                          'move_distance' : ['distance'],
+                          'move_angle' : ['angle']
+                        }
+
+        # First check if action is a valid action
+        if action not in VALID_ACTIONS:
+            raise RuntimeError(action + ' not a valid action. Valid actions are "' + ', '.join([k for k in VALID_ACTIONS.keys()]))
+
+        # Then check if we got the right number of arguments
+        _action_kwargs_len = len(action_kwargs)
+        _valid_action_kwargs_len = len(VALID_ACTIONS[action])
+        if _action_kwargs_len != _valid_action_kwargs_len:
+            raise RuntimeError(action + ' requires ' + _valid_action_kwargs_len + ' arguments. You supplied ' + _action_kwargs_len)
+
+        # And finally check if the arguments are correct
+        for arg_name, _ in action_kwargs.items():
+            _invalid_arguments = []
+            _valid_arguments = VALID_ACTIONS[action]
+            if arg_name not in _valid_arguments:
+                _invalid_arguments.append(arg_name)
+            if len(_invalid_arguments):
+                raise RuntimeError('Valid arguments to ' + action + ' are: ' + ' ,'.join(_valid_arguments) + '. The following arguments are invalid: ' + ' ,'.join(_invalid_arguments))
+
         # Perform the requested action
         if action is not None:
             print("Sending action '%s' with args: %s" %
