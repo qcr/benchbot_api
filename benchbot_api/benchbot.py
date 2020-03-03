@@ -26,8 +26,7 @@ class _UnexpectedResponseError(requests.RequestException):
 
 @unique
 class ActionResult(Enum):
-    """
-    Result of an action that an agent has taken
+    """Result of an action that an agent has taken
     SUCCESS : Action has finished successfully and the robot is ready for a new action
     FINISHED : Action has finished successfully and the robot has finished all its goals
     COLLISION : Action has not finished successfully and the robot has collided with an obstacle
@@ -38,9 +37,7 @@ class ActionResult(Enum):
 
 
 class BenchBot(object):
-    """
-    BenchBot handles communication between the client and server systems, and abstracts away hardware and simulation, such that code written to be run by BenchBot will run with either a real or simulated robot
-    """
+    """BenchBot handles communication between the client and server systems, and abstracts away hardware and simulation, such that code written to be run by BenchBot will run with either a real or simulated robot"""
 
     @unique
     class RouteType(Enum):
@@ -73,13 +70,14 @@ class BenchBot(object):
         Parameters
         ----------
         route_name :
-
+            
         route_type :
             Default value = RouteType.CONNECTION
 
         Returns
         -------
 
+        
         """
         base = self.supervisor_address + (
             '' if self.supervisor_address.endswith('/') else '/')
@@ -111,6 +109,7 @@ class BenchBot(object):
         Returns
         -------
 
+        
         """
         try:
             resp = requests.get(self._build_address(route_name, route_type))
@@ -139,6 +138,7 @@ class BenchBot(object):
         Returns
         -------
 
+        
         """
         data = {} if data is None else data
         try:
@@ -163,6 +163,7 @@ class BenchBot(object):
         Returns
         -------
 
+        
         """
         if 'callback_api' in connection_data:
             x = connection_data['callback_api'].rsplit('.', 1)
@@ -172,12 +173,12 @@ class BenchBot(object):
 
     @property
     def actions(self):
-        """
-        The list of actions the robot is able to take
+        """The list of actions the robot is able to take.
 
         Returns
         -------
-        An empty list if the robot has collided with an obstacle or finished its task, or a list of actions the robot can take
+        list
+            A list of actions the robot can take. If the robot has collided with an obstacle or finished its task, this list will be empty.
         """
         return ([] if self._receive(
             'is_collided', BenchBot.RouteType.SIMULATOR)['is_collided'] or
@@ -187,23 +188,23 @@ class BenchBot(object):
 
     @property
     def observations(self):
-        """
-        The list of observations the robot can see
+        """The list of observations the robot can see.
 
         Returns
         -------
-        The list of observations the robot can see
+        list
+            A list of observations.
         """
         return self._receive('observations', BenchBot.RouteType.CONFIG)
 
     @property
     def task_details(self):
-        """
-        The details of the task
+        """The details of the task.
 
         Returns
         -------
-        A dictionary of the task details including the type, control_mode, and localisation_mode of the task
+        dict
+            The 'type', 'control_mode', and 'localisation_mode' of the task.
         """
         return {
             k: v for k, v in zip(['type', 'control_mode', 'localisation_mode'],
@@ -213,24 +214,24 @@ class BenchBot(object):
 
     @property
     def result_filename(self):
-        """
-        The result filename. If the path doesn't exist, it makes it
+        """The result filename. If the path doesn't exist, it makes it.
 
         Returns
         -------
-        The result filename
+        str
+            The filename that the results will be written to.
         """
         if not os.path.exists(os.path.dirname(RESULT_LOCATION)):
             os.makedirs(os.path.dirname(RESULT_LOCATION))
         return os.path.join(RESULT_LOCATION)
 
     def reset(self):
-        """
-        Resets the robot state, and restarts the supervisor if necessary
+        """Resets the robot state, and restarts the supervisor if necessary.
 
         Returns
         -------
-        The observations of the robot at the initial state
+        tuple
+            Observations and action result at the start of the task.
         """
         # Only restart the supervisor if it is in a dirty state
         if self._receive('is_dirty', BenchBot.RouteType.SIMULATOR)['is_dirty']:
@@ -243,9 +244,9 @@ class BenchBot(object):
         return self.step(None)
 
     def run(self):
-        """
-        Helper function that runs the robot according to the agent given
-        Use this function as the basis for implementing a custom AI loop
+        """Helper function that runs the robot according to the agent given.
+        Use this function as the basis for implementing a custom AI loop.
+
         """
         observations, action_result = self.reset()
         while not self.agent.is_done(action_result):
@@ -255,8 +256,12 @@ class BenchBot(object):
         self.agent.save_result(self.result_filename)
 
     def start(self):
-        """
-        Connects to the supervisor and initialises the connection callbacks
+        """Connects to the supervisor and initialises the connection callbacks.
+
+        Raises
+        ------
+        requests.ConnectionError
+            If the BenchBot supervisor cannot be found.
         """
         # Establish a connection to the supervisor (throw an error on failure)
         print("Waiting to establish connection to a running supervisor ... ",
@@ -289,14 +294,13 @@ class BenchBot(object):
         }
 
     def step(self, action, **action_kwargs):
-        """
-        Performs 'action' with 'action_kwargs' as its arguments and returns the observations after 'action' has completed, regardless of the result
+        """Performs 'action' with 'action_kwargs' as its arguments and returns the observations after 'action' has completed, regardless of the result.
 
         Parameters
         ----------
-        action :
-            Action to be performed, must be one of 'move_next', 'move_distance', or 'move_angle'
-        **action_kwargs :
+        action : {'move_next', 'move_distance', 'move_angle'}
+            Action to be performed, must be one of 'move_next', 'move_distance', or 'move_angle'.
+        **action_kwargs
             Arguments to be used by the action.
             Must be empty if action is 'move_next'.
             Must be 'distance' if action is 'move_distance'. Distance is in metres.
@@ -304,7 +308,9 @@ class BenchBot(object):
 
         Returns
         -------
-        Tuple of observations and action result after the action has finished.
+        tuple
+            Observations and action result after the action has finished.
+        
         """
         # Dictionary of mappings between action (str), and args (list of str)
         VALID_ACTIONS = { 'move_next' : [],
