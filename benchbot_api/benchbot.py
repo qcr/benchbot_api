@@ -39,6 +39,12 @@ class ActionResult(Enum):
 class BenchBot(object):
     """BenchBot handles communication between the client and server systems, and abstracts away hardware and simulation, such that code written to be run by BenchBot will run with either a real or simulated robot"""
 
+    SUPPORTED_ACTIONS = {
+        'move_next': [],
+        'move_distance': ['distance'],
+        'move_angle': ['angle']
+    }
+
     @unique
     class RouteType(Enum):
         """ """
@@ -70,14 +76,14 @@ class BenchBot(object):
         Parameters
         ----------
         route_name :
-            
+
         route_type :
             Default value = RouteType.CONNECTION
 
         Returns
         -------
 
-        
+
         """
         base = self.supervisor_address + (
             '' if self.supervisor_address.endswith('/') else '/')
@@ -109,7 +115,7 @@ class BenchBot(object):
         Returns
         -------
 
-        
+
         """
         try:
             resp = requests.get(self._build_address(route_name, route_type))
@@ -138,7 +144,7 @@ class BenchBot(object):
         Returns
         -------
 
-        
+
         """
         data = {} if data is None else data
         try:
@@ -158,12 +164,12 @@ class BenchBot(object):
         Parameters
         ----------
         connection_data :
-            
+
 
         Returns
         -------
 
-        
+
         """
         if 'callback_api' in connection_data:
             x = connection_data['callback_api'].rsplit('.', 1)
@@ -310,35 +316,30 @@ class BenchBot(object):
         -------
         tuple
             Observations and action result after the action has finished.
-        
+
         """
-        # Dictionary of mappings between action (str), and args (list of str)
-        VALID_ACTIONS = { 'move_next' : [],
-                          'move_distance' : ['distance'],
-                          'move_angle' : ['angle']
-                        }
-
-        # First check if action is a valid action
-        if action not in VALID_ACTIONS:
-            raise RuntimeError(action + ' not a valid action. Valid actions are "' + ', '.join([k for k in VALID_ACTIONS.keys()]))
-
-        # Then check if we got the right number of arguments
-        _action_kwargs_len = len(action_kwargs)
-        _valid_action_kwargs_len = len(VALID_ACTIONS[action])
-        if _action_kwargs_len != _valid_action_kwargs_len:
-            raise RuntimeError(action + ' requires ' + _valid_action_kwargs_len + ' arguments. You supplied ' + _action_kwargs_len)
-
-        # And finally check if the arguments are correct
-        for arg_name, _ in action_kwargs.items():
-            _invalid_arguments = []
-            _valid_arguments = VALID_ACTIONS[action]
-            if arg_name not in _valid_arguments:
-                _invalid_arguments.append(arg_name)
-            if len(_invalid_arguments):
-                raise RuntimeError('Valid arguments to ' + action + ' are: ' + ' ,'.join(_valid_arguments) + '. The following arguments are invalid: ' + ' ,'.join(_invalid_arguments))
-
-        # Perform the requested action
+        # Perform the requested action if possible
         if action is not None:
+            # Detect unsupported actions
+            if action not in BenchBot.SUPPORTED_ACTIONS:
+                raise ValueError(
+                    "Action '%s' is not a valid action (valid actions are: %s)."
+                    % (action, ', '.join(BenchBot.SUPPORTED_ACTIONS.keys())))
+            elif len(action_kwargs) != len(BenchBot.SUPPORTED_ACTIONS[action]):
+                raise ValueError(
+                    "Action '%s' requires %d args (%s); you provided %d." %
+                    (action, len(BenchBot.SUPPORTED_ACTIONS[action]),
+                     ', '.join(BenchBot.SUPPORTED_ACTIONS[action]),
+                     len(action_kwargs)))
+            else:
+                missing_keys = (set(BenchBot.SUPPORTED_ACTIONS[action]) -
+                                set(action_kwargs.keys()))
+                if missing_keys:
+                    raise ValueError(
+                        "Action '%s' requires argument '%s' which was not "
+                        "provided." % (action, missing_keys.pop()))
+
+            # Made it through checks, actually perform the action
             print("Sending action '%s' with args: %s" %
                   (action, action_kwargs))
             self._send(action, action_kwargs, BenchBot.RouteType.CONNECTION)
