@@ -290,8 +290,6 @@ class BenchBot(object):
             time.sleep(0.1)
         print("Connected!")
 
-        # Establish connection (throw an error if we can't find the supervisor)
-
         # Get references to all of the API callbacks in robot config
         self._connection_callbacks = {
             k:
@@ -338,6 +336,16 @@ class BenchBot(object):
                     raise ValueError(
                         "Action '%s' requires argument '%s' which was not "
                         "provided." % (action, missing_keys.pop()))
+
+            # Detect actions unavailable due to robot state
+            if action not in self.actions:
+                raise ValueError(
+                    "Action '%s' is unavailable due to: %s" %
+                    (action, ('COLLISION' if self._receive(
+                        'is_collided', BenchBot.RouteType.SIMULATOR)
+                              ['is_collided'] else 'FINISHED' if self._receive(
+                                  'is_finished', BenchBot.RouteType.STATUS)
+                              ['is_finished'] else 'UNKNOWN')))
 
             # Made it through checks, actually perform the action
             print("Sending action '%s' with args: %s" %
