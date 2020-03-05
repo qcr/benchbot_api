@@ -12,7 +12,10 @@ setup(name='benchbot_api',
       long_description=long_description,
       long_description_content_type='text/markdown',
       packages=find_packages(),
-      install_requires=['numpy', 'opencv-python', 'requests', 'jsonpickle'],
+      install_requires=[
+          'jsonpickle', 'matplotlib', 'numpy', 'opencv-python', 'requests',
+          'scipy'
+      ],
       classifiers=(
           "Programming Language :: Python :: 2",
           "Programming Language :: Python :: 2.7",
