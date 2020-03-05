@@ -55,11 +55,11 @@ class BenchBot(object):
         EXPLICIT = 4
 
     def __init__(self,
-                 agent,
+                 agent=None,
                  supervisor_address='http://' + DEFAULT_ADDRESS + ':' +
                  str(DEFAULT_PORT) + '/',
                  auto_start=True):
-        if not isinstance(agent, Agent):
+        if agent is not None and not isinstance(agent, Agent):
             raise ValueError("BenchBot received an agent of type '%s' "
                              "which is not an instance of '%s'." %
                              (agent.__class__.__name__, Agent.__name__))
@@ -254,6 +254,12 @@ class BenchBot(object):
         Use this function as the basis for implementing a custom AI loop.
 
         """
+        if self.agent is None:
+            raise RuntimeError(
+                "Can't call Benchbot.run() without an agent attached. Either "
+                "create your BenchBot instance with an agent argument, "
+                "or create your own run logic instead of using Benchbot.run()")
+
         observations, action_result = self.reset()
         while not self.agent.is_done(action_result):
             action, action_args = self.agent.pick_action(
