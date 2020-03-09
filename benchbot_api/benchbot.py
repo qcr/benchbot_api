@@ -193,6 +193,14 @@ class BenchBot(object):
                 self._receive('actions', BenchBot.RouteType.CONFIG))
 
     @property
+    def environment_details(self):
+        return {
+            k: v for k, v in zip(['name', 'variation_number'],
+                                 self._receive('environment_name', BenchBot.
+                                               RouteType.CONFIG).split('_'))
+        }
+
+    @property
     def observations(self):
         """The list of observations the robot can see.
 
