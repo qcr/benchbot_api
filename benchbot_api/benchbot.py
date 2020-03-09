@@ -195,7 +195,7 @@ class BenchBot(object):
     @property
     def environment_details(self):
         return {
-            k: v for k, v in zip(['name', 'variation_number'],
+            k: v for k, v in zip(['name', 'number'],
                                  self._receive('environment_name', BenchBot.
                                                RouteType.CONFIG).split('_'))
         }
