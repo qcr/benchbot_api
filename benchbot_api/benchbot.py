@@ -194,10 +194,10 @@ class BenchBot(object):
 
     @property
     def environment_details(self):
+        names = self._receive('environment_names', BenchBot.RouteType.CONFIG)
         return {
-            k: v for k, v in zip(['name', 'number'],
-                                 self._receive('environment_name', BenchBot.
-                                               RouteType.CONFIG).split('_'))
+            'name': names[0].split('_')[0],
+            'numbers': [x.split('_')[-1] for x in names]
         }
 
     @property
@@ -239,6 +239,27 @@ class BenchBot(object):
             os.makedirs(os.path.dirname(RESULT_LOCATION))
         return os.path.join(RESULT_LOCATION)
 
+    def next_scene(self):
+        # Bail if next is not a valid operation
+        if (self._receive('is_collided',
+                          BenchBot.RouteType.SIMULATOR)['is_collided']):
+            raise RuntimeError("Collision stated detected for robot; "
+                               "cannot proceed to next scene")
+        elif 'semantic_slam' in self.task_details['type']:
+            raise RuntimeError("Semantic SLAM only consists of one scene; "
+                               "cannot proceed to next scene")
+
+        # Move to the next scene
+        print("Moving to next scene ... ", end='')
+        resp = self._receive(
+            'next', BenchBot.RouteType.SIMULATOR)  # This should be a send...
+        print("Done.")
+
+        # Raise an error if it failed (because it was called a second time)
+        if not resp['next_success']:
+            raise RuntimeError("Simulator is already at final scene; "
+                               "cannot proceed to next scene")
+
     def reset(self):
         """Resets the robot state, and restarts the supervisor if necessary.
 
@@ -250,10 +271,11 @@ class BenchBot(object):
         # Only restart the supervisor if it is in a dirty state
         if self._receive('is_dirty', BenchBot.RouteType.SIMULATOR)['is_dirty']:
             print("Dirty simulator state detected. Performing reset ... ",
-                  end="")
+                  end='')
             sys.stdout.flush()
-            self._receive('restart', BenchBot.RouteType.SIMULATOR
-                         )  # This should probably be a send...
+            self._receive(
+                'restart',
+                BenchBot.RouteType.SIMULATOR)  # This should be a send...
             print("Complete.")
         return self.step(None)
 
