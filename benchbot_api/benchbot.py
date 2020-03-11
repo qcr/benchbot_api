@@ -274,7 +274,7 @@ class BenchBot(object):
                   end='')
             sys.stdout.flush()
             self._receive(
-                'restart',
+                'reset',
                 BenchBot.RouteType.SIMULATOR)  # This should be a send...
             print("Complete.")
         return self.step(None)
@@ -345,6 +345,21 @@ class BenchBot(object):
             BenchBot._attempt_connection_imports(v) for k, v in self._receive(
                 'robot', BenchBot.RouteType.CONFIG).items()
         }
+
+        # Ensure we are starting in a clean simulator state
+        if (self._receive('map_selection_number',
+                          BenchBot.RouteType.SIMULATOR)['map_selection_number']
+                != 0):
+            print(
+                "Simulator detected not to be in the first scene. "
+                "Performing restart ... ",
+                end='')
+            sys.stdout.flush()
+            self._receive(
+                'restart',
+                BenchBot.RouteType.SIMULATOR)  # This should be a send...
+        else:
+            self.reset()
 
     def step(self, action, **action_kwargs):
         """Performs 'action' with 'action_kwargs' as its arguments and returns the observations after 'action' has completed, regardless of the result.
