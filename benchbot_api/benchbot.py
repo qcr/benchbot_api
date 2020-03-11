@@ -290,11 +290,24 @@ class BenchBot(object):
                 "create your BenchBot instance with an agent argument, "
                 "or create your own run logic instead of using Benchbot.run()")
 
-        observations, action_result = self.reset()
-        while not self.agent.is_done(action_result):
-            action, action_args = self.agent.pick_action(
-                observations, self.actions)
-            observations, action_result = self.step(action, **action_args)
+        # Copy & pasting the same code twice just doesn't feel right...
+        def scene_fn():
+            observations, action_result = self.reset()
+            while not self.agent.is_done(action_result):
+                action, action_args = self.agent.pick_action(
+                    observations, self.actions)
+                observations, action_result = self.step(action, **action_args)
+
+        # Run through the first scene until done
+        scene_fn()
+
+        # Attempt to run through the second scene if in Scene Change Detection
+        # mode
+        if 'scd' in self.task_details['type']:
+            self.next_scene()
+            scene_fn()
+
+        # We've made it to the end, we should save our results!
         self.agent.save_result(self.result_filename)
 
     def start(self):
@@ -381,7 +394,7 @@ class BenchBot(object):
                         'is_collided', BenchBot.RouteType.SIMULATOR)
                               ['is_collided'] else 'FINISHED' if self._receive(
                                   'is_finished', BenchBot.RouteType.STATUS)
-                              ['is_finished'] else 'UNKNOWN')))
+                              ['is_finished'] else 'WRONG_ACTUATION_MODE?')))
 
             # Made it through checks, actually perform the action
             print("Sending action '%s' with args: %s" %
