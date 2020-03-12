@@ -239,6 +239,13 @@ class BenchBot(object):
             os.makedirs(os.path.dirname(RESULT_LOCATION))
         return os.path.join(RESULT_LOCATION)
 
+    def empty_results(self):
+        return {
+            'task_details': self.task_details,
+            'environment_details': self.environment_details,
+            'detections': []
+        }
+
     def next_scene(self):
         # Bail if next is not a valid operation
         if (self._receive('is_collided',
@@ -308,7 +315,7 @@ class BenchBot(object):
             scene_fn()
 
         # We've made it to the end, we should save our results!
-        self.agent.save_result(self.result_filename)
+        self.agent.save_result(self.result_filename, self.empty_results())
 
     def start(self):
         """Connects to the supervisor and initialises the connection callbacks.
