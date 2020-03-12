@@ -55,11 +55,11 @@ class BenchBot(object):
         EXPLICIT = 4
 
     def __init__(self,
-                 agent,
+                 agent=None,
                  supervisor_address='http://' + DEFAULT_ADDRESS + ':' +
                  str(DEFAULT_PORT) + '/',
                  auto_start=True):
-        if not isinstance(agent, Agent):
+        if agent is not None and not isinstance(agent, Agent):
             raise ValueError("BenchBot received an agent of type '%s' "
                              "which is not an instance of '%s'." %
                              (agent.__class__.__name__, Agent.__name__))
@@ -193,6 +193,14 @@ class BenchBot(object):
                 self._receive('actions', BenchBot.RouteType.CONFIG))
 
     @property
+    def environment_details(self):
+        names = self._receive('environment_names', BenchBot.RouteType.CONFIG)
+        return {
+            'name': names[0].split('_')[0],
+            'numbers': [x.split('_')[-1] for x in names]
+        }
+
+    @property
     def observations(self):
         """The list of observations the robot can see.
 
@@ -231,6 +239,34 @@ class BenchBot(object):
             os.makedirs(os.path.dirname(RESULT_LOCATION))
         return os.path.join(RESULT_LOCATION)
 
+    def empty_results(self):
+        return {
+            'task_details': self.task_details,
+            'environment_details': self.environment_details,
+            'detections': []
+        }
+
+    def next_scene(self):
+        # Bail if next is not a valid operation
+        if (self._receive('is_collided',
+                          BenchBot.RouteType.SIMULATOR)['is_collided']):
+            raise RuntimeError("Collision stated detected for robot; "
+                               "cannot proceed to next scene")
+        elif 'semantic_slam' in self.task_details['type']:
+            raise RuntimeError("Semantic SLAM only consists of one scene; "
+                               "cannot proceed to next scene")
+
+        # Move to the next scene
+        print("Moving to next scene ... ", end='')
+        resp = self._receive(
+            'next', BenchBot.RouteType.SIMULATOR)  # This should be a send...
+        print("Done.")
+
+        # Raise an error if it failed (because it was called a second time)
+        if not resp['next_success']:
+            raise RuntimeError("Simulator is already at final scene; "
+                               "cannot proceed to next scene")
+
     def reset(self):
         """Resets the robot state, and restarts the supervisor if necessary.
 
@@ -242,10 +278,11 @@ class BenchBot(object):
         # Only restart the supervisor if it is in a dirty state
         if self._receive('is_dirty', BenchBot.RouteType.SIMULATOR)['is_dirty']:
             print("Dirty simulator state detected. Performing reset ... ",
-                  end="")
+                  end='')
             sys.stdout.flush()
-            self._receive('restart', BenchBot.RouteType.SIMULATOR
-                         )  # This should probably be a send...
+            self._receive(
+                'reset',
+                BenchBot.RouteType.SIMULATOR)  # This should be a send...
             print("Complete.")
         return self.step(None)
 
@@ -254,12 +291,31 @@ class BenchBot(object):
         Use this function as the basis for implementing a custom AI loop.
 
         """
-        observations, action_result = self.reset()
-        while not self.agent.is_done(action_result):
-            action, action_args = self.agent.pick_action(
-                observations, self.actions)
-            observations, action_result = self.step(action, **action_args)
-        self.agent.save_result(self.result_filename)
+        if self.agent is None:
+            raise RuntimeError(
+                "Can't call Benchbot.run() without an agent attached. Either "
+                "create your BenchBot instance with an agent argument, "
+                "or create your own run logic instead of using Benchbot.run()")
+
+        # Copy & pasting the same code twice just doesn't feel right...
+        def scene_fn():
+            observations, action_result = self.reset()
+            while not self.agent.is_done(action_result):
+                action, action_args = self.agent.pick_action(
+                    observations, self.actions)
+                observations, action_result = self.step(action, **action_args)
+
+        # Run through the first scene until done
+        scene_fn()
+
+        # Attempt to run through the second scene if in Scene Change Detection
+        # mode
+        if 'scd' in self.task_details['type']:
+            self.next_scene()
+            scene_fn()
+
+        # We've made it to the end, we should save our results!
+        self.agent.save_result(self.result_filename, self.empty_results())
 
     def start(self):
         """Connects to the supervisor and initialises the connection callbacks.
@@ -296,6 +352,21 @@ class BenchBot(object):
             BenchBot._attempt_connection_imports(v) for k, v in self._receive(
                 'robot', BenchBot.RouteType.CONFIG).items()
         }
+
+        # Ensure we are starting in a clean simulator state
+        if (self._receive('map_selection_number',
+                          BenchBot.RouteType.SIMULATOR)['map_selection_number']
+                != 0):
+            print(
+                "Simulator detected not to be in the first scene. "
+                "Performing restart ... ",
+                end='')
+            sys.stdout.flush()
+            self._receive(
+                'restart',
+                BenchBot.RouteType.SIMULATOR)  # This should be a send...
+        else:
+            self.reset()
 
     def step(self, action, **action_kwargs):
         """Performs 'action' with 'action_kwargs' as its arguments and returns the observations after 'action' has completed, regardless of the result.
@@ -345,7 +416,7 @@ class BenchBot(object):
                         'is_collided', BenchBot.RouteType.SIMULATOR)
                               ['is_collided'] else 'FINISHED' if self._receive(
                                   'is_finished', BenchBot.RouteType.STATUS)
-                              ['is_finished'] else 'UNKNOWN')))
+                              ['is_finished'] else 'WRONG_ACTUATION_MODE?')))
 
             # Made it through checks, actually perform the action
             print("Sending action '%s' with args: %s" %
@@ -363,8 +434,16 @@ class BenchBot(object):
 
         # Retrieve and return an updated set of observations
         raw_os = {o: self._receive(o) for o in self.observations}
+        if 'scd' in self.task_details['type']:
+            raw_os.update({
+                'scene_number':
+                    self._receive('map_selection_number',
+                                  BenchBot.RouteType.SIMULATOR)
+                    ['map_selection_number']
+            })
         return ({
-            k: self._connection_callbacks[k](v)
-            if self._connection_callbacks[k] is not None else v
+            k: self._connection_callbacks[k](v) if
+            (k in self._connection_callbacks and
+             self._connection_callbacks[k] is not None) else v
             for k, v in raw_os.items()
         }, action_result)
