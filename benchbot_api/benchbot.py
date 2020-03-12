@@ -427,8 +427,16 @@ class BenchBot(object):
 
         # Retrieve and return an updated set of observations
         raw_os = {o: self._receive(o) for o in self.observations}
+        if 'scd' in self.task_details['type']:
+            raw_os.update({
+                'scene_number':
+                    self._receive('map_selection_number',
+                                  BenchBot.RouteType.SIMULATOR)
+                    ['map_selection_number']
+            })
         return ({
-            k: self._connection_callbacks[k](v)
-            if self._connection_callbacks[k] is not None else v
+            k: self._connection_callbacks[k](v) if
+            (k in self._connection_callbacks and
+             self._connection_callbacks[k] is not None) else v
             for k, v in raw_os.items()
         }, action_result)
