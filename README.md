@@ -128,4 +128,35 @@ The returned `observations` variable holds a dictionary with key-value pairs cor
 
 ## Using the API to communicate with the BenchBot system
 
-TODO
+A running BenchBot system manages many other elements besides simply getting data to and from a real / simulated robot. BenchBot encapsulates not just the robot, but also the environment it is operating in (whether that be simulator or real) & task that is currently being attempted.
+
+As such, the BenchBot API facilitates communication regarding all parts of the BenchBot system including controlling the currently running environment & obtaining configuration informaation. Below are details for some of the more useful other features of the API (all features are also documented in the `benchbot.py` source code).
+
+### Gathering configuration information
+
+| API method or property | Description |
+|------------------------|-------------|
+|`environment_details` | Returns a `dict` describing the environment that is currently running. It contains fields: `'name: string'` & '`'numbers: list'`' (length of 1 or 2 depending on whether the current task is Semantic SLAM or Scene Change Detection). |
+|`task_details` | Returns a `dict` describing the currently selected task. It contains fields: `'control_mode': 'active|passive'`, `'localisation_mode': 'ground_truth|dead_reckoning'`, & `'type': 'semantic_slam|scd'`. |
+|`config` | Returns a `dict` exhaustively describing the current BenchBot configuration. Most of the information returned will not be useful for general BenchBot use. |
+
+### Interacting with the environment
+
+| API method or property | Description |
+|------------------------|-------------|
+|`reset()` | Resets the current environment scene. For the simulator, this means restarting the running simulator instance with the robot back at its initial position. The method  returns `observations`, & the `action_result` (should always be `BenchBot.ActionResult.SUCCESS`). |
+| `next_scene()` | Starts the next scene in the current environment (only relevant for Scene Change Detection tasks). Note there is no going back once you have moved to the next scene. Returns the same as `reset()`.|
+
+### Interacting with an agent
+
+| API method or property | Description |
+|------------------------|-------------|
+|`actions` | Returns the list of actions currently available to the agent. This will update as actions are performed in the environment (for example if the agent has collided with an obstacle this list will be empty). |
+|`step(action, **action_args)` | Performs the requested action with the provided named action arguments. See "Using the API to communicate with a robot" above for further details.|
+
+### Creating results
+
+| API method or property | Description |
+|------------------------|-------------|
+|`empty_results`| Generates a `dict` of results with no detections. The `dict` already has all of the required fields pre-filled with relevant data (e.g. environment & task details). To create results, all a user needs to do is fill in the empty `'detections'` field.
+|`RESULT_LOCATION` (outside of `BenchBot` class) | A static string denoting where results should be saved (`/tmp/results`). Using this locations ensures tools in the [BenchBot Software Stack](https://github.com/RoboticVisionOrg/benchbot) work as expected.|
