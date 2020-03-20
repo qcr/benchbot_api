@@ -98,9 +98,8 @@ class BenchBot(object):
         elif route_type == BenchBot.RouteType.EXPLICIT:
             return base + route_name
         else:
-            raise ValueError(
-                "Cannot build address from invalid route type: %s" %
-                route_type)
+            raise ValueError("Cannot build address from invalid route type: %s"
+                             % route_type)
 
     def _receive(self, route_name=None, route_type=RouteType.CONNECTION):
         """
@@ -148,8 +147,8 @@ class BenchBot(object):
         """
         data = {} if data is None else data
         try:
-            resp = requests.get(self._build_address(route_name, route_type),
-                                json=data)
+            resp = requests.get(
+                self._build_address(route_name, route_type), json=data)
             if resp.status_code >= 300:
                 raise _UnexpectedResponseError(resp.status_code)
         except:
@@ -173,8 +172,8 @@ class BenchBot(object):
         """
         if 'callback_api' in connection_data:
             x = connection_data['callback_api'].rsplit('.', 1)
-            return getattr(importlib.import_module('benchbot_api.' + x[0]),
-                           x[1])
+            return getattr(
+                importlib.import_module('benchbot_api.' + x[0]), x[1])
         return None
 
     @property
@@ -191,6 +190,17 @@ class BenchBot(object):
                 self._receive('is_finished',
                               BenchBot.RouteType.STATUS)['is_finished'] else
                 self._receive('actions', BenchBot.RouteType.CONFIG))
+
+    @property
+    def config(self):
+        """Returns detailed information about the current BenchBot configuration
+
+        Returns
+        -------
+        dict
+            A dict of all configuration parameters as retrieved from the running BenchBot supervisor
+        """
+        return self._receive('', BenchBot.RouteType.CONFIG)
 
     @property
     def environment_details(self):
@@ -277,8 +287,9 @@ class BenchBot(object):
         """
         # Only restart the supervisor if it is in a dirty state
         if self._receive('is_dirty', BenchBot.RouteType.SIMULATOR)['is_dirty']:
-            print("Dirty simulator state detected. Performing reset ... ",
-                  end='')
+            print(
+                "Dirty simulator state detected. Performing reset ... ",
+                end='')
             sys.stdout.flush()
             self._receive(
                 'reset',
@@ -326,20 +337,22 @@ class BenchBot(object):
             If the BenchBot supervisor cannot be found.
         """
         # Establish a connection to the supervisor (throw an error on failure)
-        print("Waiting to establish connection to a running supervisor ... ",
-              end='')
+        print(
+            "Waiting to establish connection to a running supervisor ... ",
+            end='')
         sys.stdout.flush()
         try:
             self._receive("/", BenchBot.RouteType.EXPLICIT)
         except requests.ConnectionError as e:
-            raise type(e)("Could not find a BenchBot supervisor @ '%s'. "
-                          "Are you sure it is available?" %
-                          self.supervisor_address)
+            raise type(e)(
+                "Could not find a BenchBot supervisor @ '%s'. "
+                "Are you sure it is available?" % self.supervisor_address)
         print("Connected!")
 
         # Wait until the simulator is running
-        print("Waiting to establish connection to a running simulator ... ",
-              end='')
+        print(
+            "Waiting to establish connection to a running simulator ... ",
+            end='')
         sys.stdout.flush()
         while (not self._receive("is_running",
                                  BenchBot.RouteType.SIMULATOR)['is_running']):
@@ -401,8 +414,8 @@ class BenchBot(object):
                      ', '.join(BenchBot.SUPPORTED_ACTIONS[action]),
                      len(action_kwargs)))
             else:
-                missing_keys = (set(BenchBot.SUPPORTED_ACTIONS[action]) -
-                                set(action_kwargs.keys()))
+                missing_keys = (set(BenchBot.SUPPORTED_ACTIONS[action]) - set(
+                    action_kwargs.keys()))
                 if missing_keys:
                     raise ValueError(
                         "Action '%s' requires argument '%s' which was not "
@@ -410,17 +423,18 @@ class BenchBot(object):
 
             # Detect actions unavailable due to robot state
             if action not in self.actions:
-                raise ValueError(
-                    "Action '%s' is unavailable due to: %s" %
-                    (action, ('COLLISION' if self._receive(
-                        'is_collided', BenchBot.RouteType.SIMULATOR)
-                              ['is_collided'] else 'FINISHED' if self._receive(
-                                  'is_finished', BenchBot.RouteType.STATUS)
-                              ['is_finished'] else 'WRONG_ACTUATION_MODE?')))
+                raise ValueError("Action '%s' is unavailable due to: %s" % (
+                    action,
+                    ('COLLISION'
+                     if self._receive('is_collided', BenchBot.RouteType.
+                                      SIMULATOR)['is_collided'] else 'FINISHED'
+                     if self._receive('is_finished',
+                                      BenchBot.RouteType.STATUS)['is_finished']
+                     else 'WRONG_ACTUATION_MODE?')))
 
             # Made it through checks, actually perform the action
-            print("Sending action '%s' with args: %s" %
-                  (action, action_kwargs))
+            print(
+                "Sending action '%s' with args: %s" % (action, action_kwargs))
             self._send(action, action_kwargs, BenchBot.RouteType.CONNECTION)
 
         # Derive action_result (TODO should probably not be this flimsy...)
@@ -437,13 +451,13 @@ class BenchBot(object):
         if 'scd' in self.task_details['type']:
             raw_os.update({
                 'scene_number':
-                    self._receive('map_selection_number',
-                                  BenchBot.RouteType.SIMULATOR)
-                    ['map_selection_number']
+                self._receive(
+                    'map_selection_number',
+                    BenchBot.RouteType.SIMULATOR)['map_selection_number']
             })
         return ({
-            k: self._connection_callbacks[k](v) if
-            (k in self._connection_callbacks and
-             self._connection_callbacks[k] is not None) else v
+            k: self._connection_callbacks[k](v)
+            if (k in self._connection_callbacks and
+                self._connection_callbacks[k] is not None) else v
             for k, v in raw_os.items()
         }, action_result)
