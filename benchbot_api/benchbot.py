@@ -250,7 +250,7 @@ class BenchBot(object):
             os.makedirs(os.path.dirname(RESULT_LOCATION))
         return os.path.join(RESULT_LOCATION)
 
-    def empty_object_proposal(self, num_classes=31):
+    def empty_object(self, num_classes=31):
         p = {
             'label_probs': [0] * num_classes,
             'centroid': [0] * 3,
@@ -337,7 +337,7 @@ class BenchBot(object):
 
         # We've made it to the end, we should save our results!
         self.agent.save_result(self.result_filename, self.empty_results(),
-                               self.empty_object_proposal)
+                               self.empty_object)
 
     def start(self):
         """Connects to the supervisor and initialises the connection callbacks.
