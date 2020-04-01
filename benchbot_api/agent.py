@@ -1,8 +1,7 @@
 from abc import abstractmethod, ABCMeta
 
 
-class Agent(object):
-    __metaclass__ = ABCMeta
+class Agent(ABCMeta('ABC', (object,), {})):
 
     @abstractmethod
     def is_done(self, action_result):
@@ -41,7 +40,7 @@ class Agent(object):
         return None
 
     @abstractmethod
-    def save_result(self, filename, empty_results):
+    def save_result(self, filename, empty_results, empty_object_fn):
         """
         Method should write your results for the task to the file specified by
         'filename'. The method returns no value, so if there is any failure in
