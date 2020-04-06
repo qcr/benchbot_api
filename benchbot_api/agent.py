@@ -50,7 +50,7 @@ class Agent(ABCMeta('ABC', (object,), {})):
         Results must be in our specified format to be used with the semantic
         scene understanding tools provided in the 'benchbot_eval' package. The
         results format is described in the package documentation here:
-            https://github.com/RoboticVisionOrg/benchbot_eval/tree/develop#the-results-format
+            https://github.com/RoboticVisionOrg/benchbot_eval#the-results-format
 
         The 'empty_results' & 'empty_object_fn' arguments are provided to help
         build a valid results file:
