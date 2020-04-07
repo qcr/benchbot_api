@@ -1,8 +1,7 @@
 from abc import abstractmethod, ABCMeta
 
 
-class Agent(object):
-    __metaclass__ = ABCMeta
+class Agent(ABCMeta('ABC', (object,), {})):
 
     @abstractmethod
     def is_done(self, action_result):
@@ -13,8 +12,8 @@ class Agent(object):
 
         Note that if the value is 'ActionResult.COLLIDED' or
         'ActionResult.FINISHED', BenchBot will no longer report any available
-        actions via 'BenchBot.actions' so your method should definitely return
-        True in these cases
+        actions via 'BenchBot.actions' so your method needs to return True in
+        these cases
         """
         return False
 
@@ -35,20 +34,35 @@ class Agent(object):
         list, otherwise 'Benchbot.step' will throw an exception trying to
         execute an invalid action.
 
-        The current list of possible actions (& required arguments) are:
-            TODO
+        The current list of possible actions (& required arguments) is
+        available here:
+            https://github.com/RoboticVisionOrg/benchbot_api#default-communication-channel-list
         """
         return None
 
     @abstractmethod
-    def save_result(self, filename, empty_results):
+    def save_result(self, filename, empty_results, empty_object_fn):
         """
         Method should write your results for the task to the file specified by
         'filename'. The method returns no value, so if there is any failure in
         writing results an exception should be raised.
 
-        To use results with the semantic scene understanding tools provided by
-        'benchbot_eval', they must be in the format specified 
-        TODO TIDY THIS UP / MAKE IT ACCURATE!
+        Results must be in our specified format to be used with the semantic
+        scene understanding tools provided in the 'benchbot_eval' package. The
+        results format is described in the package documentation here:
+            https://github.com/RoboticVisionOrg/benchbot_eval#the-results-format
+
+        The 'empty_results' & 'empty_object_fn' arguments are provided to help
+        build a valid results file:
+            - 'empty_results': an empty results data structure, pre-populated
+              with all required BenchBot metadata (i.e. 'task_details' &
+              'environment_details')
+            - 'empty_object_fn': a function that generates an empty object in
+              the format required for the 'objects' field of your results. The
+              empty object returned by the function has all fields required
+              declared & filled with blank values (as well as only providing
+              'state_probs' if you are running in 'scd' mode). Simply fill the
+              empty object with the data from your algorithm's object-based
+              semantic map, & append it to the 'objects' field of your results.
         """
         return
