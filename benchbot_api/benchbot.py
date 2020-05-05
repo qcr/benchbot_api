@@ -14,6 +14,8 @@ DEFAULT_PORT = 10000
 
 RESULT_LOCATION = '/tmp/benchbot_result'
 
+TIMEOUT_SUPERVISOR = 30
+
 
 class _UnexpectedResponseError(requests.RequestException):
     """ """
@@ -352,12 +354,19 @@ class BenchBot(object):
         print("Waiting to establish connection to a running supervisor ... ",
               end='')
         sys.stdout.flush()
-        try:
-            self._receive("/", BenchBot.RouteType.EXPLICIT)
-        except requests.ConnectionError as e:
-            raise type(e)("Could not find a BenchBot supervisor @ '%s'. "
-                          "Are you sure it is available?" %
-                          self.supervisor_address)
+        start_time = time.time()
+        connected = False
+        while not connected and time.time() - start_time < TIMEOUT_SUPERVISOR:
+            try:
+                self._receive("/", BenchBot.RouteType.EXPLICIT)
+                connected = True
+            except:
+                pass
+            time.sleep(3)
+        if not connected:
+            raise requests.ConnectionError(
+                "Could not find a BenchBot supervisor @ '%s'. "
+                "Are you sure it is available?" % self.supervisor_address)
         print("Connected!")
 
         # Wait until the simulator is running
