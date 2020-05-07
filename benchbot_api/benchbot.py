@@ -14,6 +14,8 @@ DEFAULT_PORT = 10000
 
 RESULT_LOCATION = '/tmp/benchbot_result'
 
+TIMEOUT_SUPERVISOR = 30
+
 
 class _UnexpectedResponseError(requests.RequestException):
     """ """
@@ -40,6 +42,7 @@ class BenchBot(object):
     """BenchBot handles communication between the client and server systems, and abstracts away hardware and simulation, such that code written to be run by BenchBot will run with either a real or simulated robot"""
 
     SUPPORTED_ACTIONS = {
+        '_debug_move': [],
         'move_next': [],
         'move_distance': ['distance'],
         'move_angle': ['angle']
@@ -351,12 +354,19 @@ class BenchBot(object):
         print("Waiting to establish connection to a running supervisor ... ",
               end='')
         sys.stdout.flush()
-        try:
-            self._receive("/", BenchBot.RouteType.EXPLICIT)
-        except requests.ConnectionError as e:
-            raise type(e)("Could not find a BenchBot supervisor @ '%s'. "
-                          "Are you sure it is available?" %
-                          self.supervisor_address)
+        start_time = time.time()
+        connected = False
+        while not connected and time.time() - start_time < TIMEOUT_SUPERVISOR:
+            try:
+                self._receive("/", BenchBot.RouteType.EXPLICIT)
+                connected = True
+            except:
+                pass
+            time.sleep(3)
+        if not connected:
+            raise requests.ConnectionError(
+                "Could not find a BenchBot supervisor @ '%s'. "
+                "Are you sure it is available?" % self.supervisor_address)
         print("Connected!")
 
         # Wait until the simulator is running
@@ -416,12 +426,12 @@ class BenchBot(object):
                 raise ValueError(
                     "Action '%s' is not a valid action (valid actions are: %s)."
                     % (action, ', '.join(BenchBot.SUPPORTED_ACTIONS.keys())))
-            elif len(action_kwargs) != len(BenchBot.SUPPORTED_ACTIONS[action]):
-                raise ValueError(
-                    "Action '%s' requires %d args (%s); you provided %d." %
-                    (action, len(BenchBot.SUPPORTED_ACTIONS[action]),
-                     ', '.join(BenchBot.SUPPORTED_ACTIONS[action]),
-                     len(action_kwargs)))
+            # elif len(action_kwargs) != len(BenchBot.SUPPORTED_ACTIONS[action]):
+            #     raise ValueError(
+            #         "Action '%s' requires %d args (%s); you provided %d." %
+            #         (action, len(BenchBot.SUPPORTED_ACTIONS[action]),
+            #          ', '.join(BenchBot.SUPPORTED_ACTIONS[action]),
+            #          len(action_kwargs)))
             else:
                 missing_keys = (set(BenchBot.SUPPORTED_ACTIONS[action]) -
                                 set(action_kwargs.keys()))
