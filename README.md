@@ -1,4 +1,4 @@
-**NOTE: this software needs to interface with a running instance of the BenchBot software stack. Unless you are running against a remote stack / robot, please install this software with the BenchBot software stack as described [here](https://github.com/RoboticVisionOrg/benchbot).**
+**NOTE: this software needs to interface with a running instance of the BenchBot software stack. Unless you are running against a remote stack / robot, please install this software with the BenchBot software stack as described [here](https://github.com/roboticvisionorg/benchbot).**
 
 # BenchBot API
 
@@ -67,7 +67,7 @@ with open(RESULT_LOCATION, 'w') as f:
     json.dump(b.empty_results(), f)
 ```
 
-For full examples of solutions that use the BenchBot API, see the [benchbot_examples](https://github.com/RoboticVisionOrg/benchbot_examples) repository.
+For full examples of solutions that use the BenchBot API, see the [benchbot_examples](https://github.com/roboticvisionorg/benchbot_examples) repository.
 
 ## Installing BenchBot API
 
@@ -79,7 +79,7 @@ u@pc:~$ pip install .
 
 ## Using the API to communicate with a robot
 
-Communication with the robot comes through a series of "channels" which are defined by the [BenchBot Supervisor](https://github.com/RoboticVisionOrg/benchbot_supervisor). The supervisor also defines whether the channel is an observation from a sensor, or an action executed by a robot actuator (like a motor). The BenchBot API abstracts all of the underlying communication configurations away from the user, so they can simply focus on getting observations & sending actions.
+Communication with the robot comes through a series of "channels" which are defined by the [BenchBot Supervisor](https://github.com/roboticvisionorg/benchbot_supervisor). The supervisor also defines whether the channel is an observation from a sensor, or an action executed by a robot actuator (like a motor). The BenchBot API abstracts all of the underlying communication configurations away from the user, so they can simply focus on getting observations & sending actions.
 
 Sending an action to the robot only requires calling the `BenchBot.step()` method with a valid action (found by checking the `BenchBot.actions` property):
 
@@ -158,6 +158,6 @@ As such, the BenchBot API facilitates communication regarding all parts of the B
 
 | API method or property | Description |
 |------------------------|-------------|
-|`empty_results()`| Generates a `dict` of results with an empty map containing no objects. The `dict` already has all of the required fields pre-filled with relevant data (e.g. environment & task details). To create results, all a user needs to do is fill in the empty `'objects'` field. <br><br>If a user wishes to use a custom class list instead of [our default class list](https://github.com/RoboticVisionOrg/benchbot_eval#benchbot-evaluation), they can add the `'class_list'` field.|
-|`empty_object(num_classes=31)`| Generates a `dict` representing an empty object for an object-based semantic map. The `'label_probs'` field is given the length of [our default class list](https://github.com/RoboticVisionOrg/benchbot_eval#benchbot-evaluation), but can be overidden by specifying the `num_classes` argument. The `'state_probs'` field will only be present when running in SCD mode.|
-|`RESULT_LOCATION` (outside of `BenchBot` class) | A static string denoting where results should be saved (`/tmp/results`). Using this locations ensures tools in the [BenchBot software stack](https://github.com/RoboticVisionOrg/benchbot) work as expected.|
+|`empty_results()`| Generates a `dict` of results with an empty map containing no objects. The `dict` already has all of the required fields pre-filled with relevant data (e.g. environment & task details). To create results, all a user needs to do is fill in the empty `'objects'` field. <br><br>If a user wishes to use a custom class list instead of [our default class list](https://github.com/roboticvisionorg/benchbot_eval#benchbot-evaluation), they can add the `'class_list'` field.|
+|`empty_object(num_classes=31)`| Generates a `dict` representing an empty object for an object-based semantic map. The `'label_probs'` field is given the length of [our default class list](https://github.com/roboticvisionorg/benchbot_eval#benchbot-evaluation), but can be overidden by specifying the `num_classes` argument. The `'state_probs'` field will only be present when running in SCD mode.|
+|`RESULT_LOCATION` (outside of `BenchBot` class) | A static string denoting where results should be saved (`/tmp/results`). Using this locations ensures tools in the [BenchBot software stack](https://github.com/roboticvisionorg/benchbot) work as expected.|
