@@ -104,6 +104,11 @@ observations, action_result = b.step('move_distance', {'distance': 5})
 ```
 The returned `observations` variable holds a dictionary with key-value pairs corresponding to the name-data defined by each observation channel. A full list of observation channels for the default channel set is provided below.
 
+The `action_result` is an enumerated value denoting the result of the action (use `from benchbot_api import ActionResult` to access the `Enum` class). You should use this result to guide the progression of your algorithm either manually or in the `is_done()` method of your `Agent`. Possible values for the returned `action_result` are:
+- `ActionResult.SUCCESS`: the action was carried out successfully 
+- `ActionResult.FINISHED`: the action was carried out successfully, and the robot is now finished its traversal through the scene (only used in `passive` actuation mode)
+- `ActionResult.COLLISION`: the action crashed the robot into an obstacle, and as a result it will not respond to any further actuation commands (at this point you should quit)
+
 ### Default Communication Channel List
 
 #### Action Channels:
