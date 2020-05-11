@@ -14,7 +14,7 @@ DEFAULT_PORT = 10000
 
 RESULT_LOCATION = '/tmp/benchbot_result'
 
-TIMEOUT_SUPERVISOR = 30
+TIMEOUT_SUPERVISOR = 60
 
 
 class _UnexpectedResponseError(requests.RequestException):
