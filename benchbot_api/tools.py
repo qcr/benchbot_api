@@ -1,3 +1,8 @@
+import matplotlib as mpl
+mpl.use(
+    'TkAgg'
+)  # Default renderer Gtk3Agg had all sorts of stalling issues in matplotlib>=3.2
+
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
@@ -77,9 +82,9 @@ class ObservationVisualiser(object):
         self.axs[1, 1].text(origin[0], origin[1], origin[2], frame_name)
 
     def update(self):
-        # Performas a non-blocking update of the figure
+        # Performs a non-blocking update of the figure
         plt.draw()
-        self.fig.canvas.start_event_loop(0.0001)
+        self.fig.canvas.start_event_loop(0.05)
 
     def visualise(self, observations, step_count=None):
         if self.fig is None:
