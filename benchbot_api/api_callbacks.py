@@ -13,10 +13,14 @@ def decode_color_image(data):
             cv2.imdecode(
                 np.fromstring(base64.b64decode(data['data']), np.uint8),
                 cv2.IMREAD_COLOR), cv2.COLOR_BGR2RGB)
+    elif data['encoding'] == 'rgb8':
+        return cv2.imdecode(
+            np.fromstring(base64.b64decode(data['data']), np.uint8),
+            cv2.IMREAD_COLOR)
     else:
         raise ValueError(
-            "decode_ros_image: received image data with unsupported encoding: %s",
-            data['encoding'])
+            "decode_ros_image: received image data with unsupported encoding: %s"
+            % data['encoding'])
 
 
 def decode_jsonpickle(data):
