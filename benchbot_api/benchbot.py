@@ -408,7 +408,7 @@ class BenchBot(object):
             Arguments to be used by the action.
             Must be empty if action is 'move_next'.
             Must be 'distance' if action is 'move_distance'. Distance is in metres.
-            Must be 'angle' if action is 'move_angle'. Angle is in radians.
+            Must be 'angle' if action is 'move_angle'. Angle is in degrees.
 
         Returns
         -------
