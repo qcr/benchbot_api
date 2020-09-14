@@ -127,7 +127,7 @@ class BenchBot(object):
             return resp.json()
         except:
             raise requests.ConnectionError(
-                "Failed to establish a connection to BenchBot supervisor")
+                "Communication failed with the BenchBot supervisor")
 
     def _send(self,
               route_name=None,
