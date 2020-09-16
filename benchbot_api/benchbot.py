@@ -128,7 +128,7 @@ class BenchBot(object):
             resp = requests.get(self._build_address(route_name, route_type))
             if resp.status_code >= 300:
                 raise _UnexpectedResponseError(resp.status_code)
-            return resp.json()
+            return jsonpickle.decode(resp.content)
         except:
             raise requests.ConnectionError(
                 "Communication failed with the BenchBot supervisor")
@@ -475,8 +475,8 @@ class BenchBot(object):
                     ['map_selection_number']
             })
         return ({
-            k: jsonpickle.decode(self._connection_callbacks[k](v) if (
-                k in self._connection_callbacks and
-                self._connection_callbacks[k] is not None) else v)
+            k: (self._connection_callbacks[k](v) if
+                (k in self._connection_callbacks and
+                 self._connection_callbacks[k] is not None) else v)
             for k, v in raw_os.items()
         }, action_result)
