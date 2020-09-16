@@ -1,10 +1,6 @@
 import base64
 import cv2
-import jsonpickle
-import jsonpickle.ext.numpy as jet
 import numpy as np
-
-jet.register_handlers()
 
 
 def decode_color_image(data):

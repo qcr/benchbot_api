@@ -2,12 +2,16 @@ from __future__ import print_function
 
 from enum import Enum, unique
 import importlib
+import jsonpickle
+import jsonpickle.ext.numpy as jet
 import os
 import requests
 import sys
 import time
 
 from .agent import Agent
+
+jet.register_handlers()
 
 DEFAULT_ADDRESS = 'benchbot_supervisor'
 DEFAULT_PORT = 10000
@@ -471,8 +475,8 @@ class BenchBot(object):
                     ['map_selection_number']
             })
         return ({
-            k: self._connection_callbacks[k](v) if
-            (k in self._connection_callbacks and
-             self._connection_callbacks[k] is not None) else v
+            k: jsonpickle.decode(self._connection_callbacks[k](v) if (
+                k in self._connection_callbacks and
+                self._connection_callbacks[k] is not None) else v)
             for k, v in raw_os.items()
         }, action_result)
