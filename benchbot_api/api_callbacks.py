@@ -2,6 +2,13 @@ import base64
 import cv2
 import numpy as np
 
+ENCODING_TO_CONVERSION = {'bgr8': cv2.COLOR_BGR2RGB}
+
+
+def convert_to_rgb(data):
+    cvt = ENCODING_TO_CONVERSION.get(data['encoding'], None)
+    return data['data'] if cvt is None else cv2.cvtColor(data['data'], cvt)
+
 
 def decode_color_image(data):
     if data['encoding'] == 'bgr8':
