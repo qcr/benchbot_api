@@ -384,7 +384,7 @@ class BenchBot(object):
         self._connection_callbacks = {
             k:
             BenchBot._attempt_connection_imports(v) for k, v in self._receive(
-                'robot', BenchBot.RouteType.CONFIG).items()
+                'robot', BenchBot.RouteType.CONFIG)['connections'].items()
         }
 
         # Ensure we are starting in a clean robot state
