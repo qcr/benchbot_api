@@ -58,8 +58,7 @@ class BenchBot(object):
         CONNECTION = 0,
         CONFIG = 1,
         ROBOT = 2,
-        STATUS = 3,
-        EXPLICIT = 4
+        EXPLICIT = 3
 
     def __init__(self,
                  agent=None,
@@ -100,8 +99,6 @@ class BenchBot(object):
             return base + 'config/' + route_name
         elif route_type == BenchBot.RouteType.ROBOT:
             return base + 'robot/' + route_name
-        elif route_type == BenchBot.RouteType.STATUS:
-            return base + 'status/' + route_name
         elif route_type == BenchBot.RouteType.EXPLICIT:
             return base + route_name
         else:
@@ -196,7 +193,7 @@ class BenchBot(object):
         return ([] if self._receive('is_collided',
                                     BenchBot.RouteType.ROBOT)['is_collided'] or
                 self._receive('is_finished',
-                              BenchBot.RouteType.STATUS)['is_finished'] else
+                              BenchBot.RouteType.ROBOT)['is_finished'] else
                 self._receive('actions', BenchBot.RouteType.CONFIG))
 
     @property
@@ -448,7 +445,7 @@ class BenchBot(object):
                     (action, ('COLLISION' if self._receive(
                         'is_collided', BenchBot.RouteType.ROBOT)['is_collided']
                               else 'FINISHED' if self._receive(
-                                  'is_finished', BenchBot.RouteType.STATUS)
+                                  'is_finished', BenchBot.RouteType.ROBOT)
                               ['is_finished'] else 'WRONG_ACTUATION_MODE?')))
 
             # Made it through checks, actually perform the action
@@ -462,7 +459,7 @@ class BenchBot(object):
                          BenchBot.RouteType.ROBOT)['is_collided']:
             action_result = ActionResult.COLLISION
         elif self._receive('is_finished',
-                           BenchBot.RouteType.STATUS)['is_finished']:
+                           BenchBot.RouteType.ROBOT)['is_finished']:
             action_result = ActionResult.FINISHED
 
         # Retrieve and return an updated set of observations
