@@ -152,8 +152,8 @@ class BenchBot(object):
         """
         data = {} if data is None else data
         try:
-            resp = requests.get(self._build_address(route_name, route_type),
-                                json=data)
+            resp = requests.post(self._build_address(route_name, route_type),
+                                 json=data)
             if resp.status_code >= 300:
                 raise _UnexpectedResponseError(resp.status_code)
         except:
