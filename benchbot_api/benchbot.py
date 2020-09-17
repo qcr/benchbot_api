@@ -385,9 +385,8 @@ class BenchBot(object):
         }
 
         # Ensure we are starting in a clean robot state
-        if (self._receive('map_selection_number',
-                          BenchBot.RouteType.ROBOT)['map_selection_number'] !=
-                0):
+        if (self._receive('selected_env', BenchBot.RouteType.ROBOT)['number']
+                != 0):
             print(
                 "Robot detected not to be in the first scene. "
                 "Performing restart ... ",
@@ -467,9 +466,8 @@ class BenchBot(object):
         if 'scd' in self.task_details['type']:
             raw_os.update({
                 'scene_number':
-                    self._receive('map_selection_number',
-                                  BenchBot.RouteType.ROBOT)
-                    ['map_selection_number']
+                    self._receive('selected_env', BenchBot.RouteType.ROBOT)
+                    ['number']
             })
         return ({
             k: (self._connection_callbacks[k](v) if
