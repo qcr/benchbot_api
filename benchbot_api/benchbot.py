@@ -2,12 +2,16 @@ from __future__ import print_function
 
 from enum import Enum, unique
 import importlib
+import jsonpickle
+import jsonpickle.ext.numpy as jet
 import os
 import requests
 import sys
 import time
 
 from .agent import Agent
+
+jet.register_handlers()
 
 DEFAULT_ADDRESS = 'benchbot_supervisor'
 DEFAULT_PORT = 10000
@@ -53,9 +57,8 @@ class BenchBot(object):
         """ """
         CONNECTION = 0,
         CONFIG = 1,
-        SIMULATOR = 2,
-        STATUS = 3,
-        EXPLICIT = 4
+        ROBOT = 2,
+        EXPLICIT = 3
 
     def __init__(self,
                  agent=None,
@@ -94,10 +97,8 @@ class BenchBot(object):
             return base + 'connections/' + route_name
         elif route_type == BenchBot.RouteType.CONFIG:
             return base + 'config/' + route_name
-        elif route_type == BenchBot.RouteType.SIMULATOR:
-            return base + 'simulator/' + route_name
-        elif route_type == BenchBot.RouteType.STATUS:
-            return base + 'status/' + route_name
+        elif route_type == BenchBot.RouteType.ROBOT:
+            return base + 'robot/' + route_name
         elif route_type == BenchBot.RouteType.EXPLICIT:
             return base + route_name
         else:
@@ -124,10 +125,10 @@ class BenchBot(object):
             resp = requests.get(self._build_address(route_name, route_type))
             if resp.status_code >= 300:
                 raise _UnexpectedResponseError(resp.status_code)
-            return resp.json()
+            return jsonpickle.decode(resp.content)
         except:
             raise requests.ConnectionError(
-                "Failed to establish a connection to BenchBot supervisor")
+                "Communication failed with the BenchBot supervisor")
 
     def _send(self,
               route_name=None,
@@ -151,8 +152,8 @@ class BenchBot(object):
         """
         data = {} if data is None else data
         try:
-            resp = requests.get(self._build_address(route_name, route_type),
-                                json=data)
+            resp = requests.post(self._build_address(route_name, route_type),
+                                 json=data)
             if resp.status_code >= 300:
                 raise _UnexpectedResponseError(resp.status_code)
         except:
@@ -189,10 +190,10 @@ class BenchBot(object):
         list
             A list of actions the robot can take. If the robot has collided with an obstacle or finished its task, this list will be empty.
         """
-        return ([] if self._receive(
-            'is_collided', BenchBot.RouteType.SIMULATOR)['is_collided'] or
+        return ([] if self._receive('is_collided',
+                                    BenchBot.RouteType.ROBOT)['is_collided'] or
                 self._receive('is_finished',
-                              BenchBot.RouteType.STATUS)['is_finished'] else
+                              BenchBot.RouteType.ROBOT)['is_finished'] else
                 self._receive('actions', BenchBot.RouteType.CONFIG))
 
     @property
@@ -273,7 +274,7 @@ class BenchBot(object):
     def next_scene(self):
         # Bail if next is not a valid operation
         if (self._receive('is_collided',
-                          BenchBot.RouteType.SIMULATOR)['is_collided']):
+                          BenchBot.RouteType.ROBOT)['is_collided']):
             raise RuntimeError("Collision stated detected for robot; "
                                "cannot proceed to next scene")
         elif 'semantic_slam' in self.task_details['type']:
@@ -283,12 +284,12 @@ class BenchBot(object):
         # Move to the next scene
         print("Moving to next scene ... ", end='')
         resp = self._receive(
-            'next', BenchBot.RouteType.SIMULATOR)  # This should be a send...
+            'next', BenchBot.RouteType.ROBOT)  # This should be a send...
         print("Done.")
 
         # Raise an error if it failed (because it was called a second time)
         if not resp['next_success']:
-            raise RuntimeError("Simulator is already at final scene; "
+            raise RuntimeError("Robot is already at final scene; "
                                "cannot proceed to next scene")
 
     def reset(self):
@@ -300,13 +301,11 @@ class BenchBot(object):
             Observations and action result at the start of the task.
         """
         # Only restart the supervisor if it is in a dirty state
-        if self._receive('is_dirty', BenchBot.RouteType.SIMULATOR)['is_dirty']:
-            print("Dirty simulator state detected. Performing reset ... ",
-                  end='')
+        if self._receive('is_dirty', BenchBot.RouteType.ROBOT)['is_dirty']:
+            print("Dirty robot state detected. Performing reset ... ", end='')
             sys.stdout.flush()
-            self._receive(
-                'reset',
-                BenchBot.RouteType.SIMULATOR)  # This should be a send...
+            self._receive('reset',
+                          BenchBot.RouteType.ROBOT)  # This should be a send...
             print("Complete.")
         return self.step(None)
 
@@ -369,12 +368,12 @@ class BenchBot(object):
                 "Are you sure it is available?" % self.supervisor_address)
         print("Connected!")
 
-        # Wait until the simulator is running
-        print("Waiting to establish connection to a running simulator ... ",
+        # Wait until the robot is running
+        print("Waiting to establish connection to a running robot ... ",
               end='')
         sys.stdout.flush()
         while (not self._receive("is_running",
-                                 BenchBot.RouteType.SIMULATOR)['is_running']):
+                                 BenchBot.RouteType.ROBOT)['is_running']):
             time.sleep(0.1)
         print("Connected!")
 
@@ -382,21 +381,19 @@ class BenchBot(object):
         self._connection_callbacks = {
             k:
             BenchBot._attempt_connection_imports(v) for k, v in self._receive(
-                'robot', BenchBot.RouteType.CONFIG).items()
+                'robot', BenchBot.RouteType.CONFIG)['connections'].items()
         }
 
-        # Ensure we are starting in a clean simulator state
-        if (self._receive('map_selection_number',
-                          BenchBot.RouteType.SIMULATOR)['map_selection_number']
+        # Ensure we are starting in a clean robot state
+        if (self._receive('selected_env', BenchBot.RouteType.ROBOT)['number']
                 != 0):
             print(
-                "Simulator detected not to be in the first scene. "
+                "Robot detected not to be in the first scene. "
                 "Performing restart ... ",
                 end='')
             sys.stdout.flush()
-            self._receive(
-                'restart',
-                BenchBot.RouteType.SIMULATOR)  # This should be a send...
+            self._receive('restart',
+                          BenchBot.RouteType.ROBOT)  # This should be a send...
         else:
             self.reset()
 
@@ -411,7 +408,7 @@ class BenchBot(object):
             Arguments to be used by the action.
             Must be empty if action is 'move_next'.
             Must be 'distance' if action is 'move_distance'. Distance is in metres.
-            Must be 'angle' if action is 'move_angle'. Angle is in radians.
+            Must be 'angle' if action is 'move_angle'. Angle is in degrees.
 
         Returns
         -------
@@ -445,9 +442,9 @@ class BenchBot(object):
                 raise ValueError(
                     "Action '%s' is unavailable due to: %s" %
                     (action, ('COLLISION' if self._receive(
-                        'is_collided', BenchBot.RouteType.SIMULATOR)
-                              ['is_collided'] else 'FINISHED' if self._receive(
-                                  'is_finished', BenchBot.RouteType.STATUS)
+                        'is_collided', BenchBot.RouteType.ROBOT)['is_collided']
+                              else 'FINISHED' if self._receive(
+                                  'is_finished', BenchBot.RouteType.ROBOT)
                               ['is_finished'] else 'WRONG_ACTUATION_MODE?')))
 
             # Made it through checks, actually perform the action
@@ -458,10 +455,10 @@ class BenchBot(object):
         # Derive action_result (TODO should probably not be this flimsy...)
         action_result = ActionResult.SUCCESS
         if self._receive('is_collided',
-                         BenchBot.RouteType.SIMULATOR)['is_collided']:
+                         BenchBot.RouteType.ROBOT)['is_collided']:
             action_result = ActionResult.COLLISION
         elif self._receive('is_finished',
-                           BenchBot.RouteType.STATUS)['is_finished']:
+                           BenchBot.RouteType.ROBOT)['is_finished']:
             action_result = ActionResult.FINISHED
 
         # Retrieve and return an updated set of observations
@@ -469,13 +466,12 @@ class BenchBot(object):
         if 'scd' in self.task_details['type']:
             raw_os.update({
                 'scene_number':
-                    self._receive('map_selection_number',
-                                  BenchBot.RouteType.SIMULATOR)
-                    ['map_selection_number']
+                    self._receive('selected_env', BenchBot.RouteType.ROBOT)
+                    ['number']
             })
         return ({
-            k: self._connection_callbacks[k](v) if
-            (k in self._connection_callbacks and
-             self._connection_callbacks[k] is not None) else v
+            k: (self._connection_callbacks[k](v) if
+                (k in self._connection_callbacks and
+                 self._connection_callbacks[k] is not None) else v)
             for k, v in raw_os.items()
         }, action_result)
