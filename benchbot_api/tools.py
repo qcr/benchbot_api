@@ -29,6 +29,26 @@ def _set_axes_equal(ax):
     radius = 0.5 * np.max(np.abs(limits[:, 1] - limits[:, 0]))
     _set_axes_radius(ax, origin, radius)
 
+def create_diag_mask(mask_img, num_lines=7):
+    diag_mask = np.zeros(mask_img.shape, bool)
+    img_width = diag_mask.shape[1]
+    line_width = np.min(diag_mask.shape) // num_lines
+    # TODO Magic numbers in here ... don't do that
+    bool_line = np.tile(np.append(np.ones(line_width, bool),
+                                  np.zeros(line_width, bool)),
+                        (img_width*2 // (line_width*2)) + 2)
+    for row_id in np.arange(diag_mask.shape[0]):
+        start_idx = img_width - row_id % img_width
+        # TODO there must be a better way to do this
+        if (row_id // img_width) > 0 and (row_id // img_width) % 2 == 1:
+            start_idx += line_width
+        diag_mask[row_id,:] = bool_line[start_idx:(start_idx+img_width)]
+    return np.logical_and(mask_img, diag_mask)
+
+def get_roi(img_mask):
+    a = np.where(img_mask != 0)
+    bbox = np.min(a[0]), np.max(a[0])+1, np.min(a[1]), np.max(a[1])+1
+    return bbox
 
 class ObservationVisualiser(object):
 
@@ -133,14 +153,14 @@ class ObservationVisualiser(object):
         
         # Make diagonal pattern mask
         diagonal_mask_img = np.zeros(inst_segment_img.shape, bool)
-        img_width = diagonal_mask_img.shape[1]
-        line_width = np.min(diagonal_mask_img.shape) // 20
-        bool_line = np.tile(np.append(np.ones(line_width, bool),
-                                      np.zeros(line_width, bool)),
-                            (img_width*2 // (line_width*2))+1)
-        for row_id in np.arange(diagonal_mask_img.shape[0]):
-            start_idx = img_width - row_id % img_width
-            diagonal_mask_img[row_id,:] = bool_line[start_idx:(start_idx+img_width)]
+        # Each instance will have its own diagonal mask to help visualization
+        for inst_id in np.unique(inst_segment_img):
+            inst_mask_img = inst_segment_img == inst_id
+            y0, y1, x0, x1 = get_roi(inst_mask_img)
+            inst_diag_mask = create_diag_mask(inst_mask_img[y0:y1, x0:x1])
+            diagonal_mask_img[y0:y1, x0:x1] = np.logical_or(diagonal_mask_img[y0:y1, x0:x1],
+                                                            inst_diag_mask)
+        # diagonal_mask_img = create_diag_mask(diagonal_mask_img, 20)
         
         # First image is the class id with stripes
         masked_inst_class = np.ma.masked_where(np.logical_or(class_segment_img == 0,
