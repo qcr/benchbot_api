@@ -52,7 +52,7 @@ class ObservationVisualiser(object):
         y_vector = rot_obj.apply([0, 1, 0])
         z_vector = rot_obj.apply([0, 0, 1])
         origin = frame_data['translation_xyz']
-        self.axs[1, 1].quiver(origin[0],
+        self.axs[1, 2].quiver(origin[0],
                               origin[1],
                               origin[2],
                               x_vector[0],
@@ -61,7 +61,7 @@ class ObservationVisualiser(object):
                               length=L,
                               normalize=True,
                               color='r')
-        self.axs[1, 1].quiver(origin[0],
+        self.axs[1, 2].quiver(origin[0],
                               origin[1],
                               origin[2],
                               y_vector[0],
@@ -70,7 +70,7 @@ class ObservationVisualiser(object):
                               length=L,
                               normalize=True,
                               color='g')
-        self.axs[1, 1].quiver(origin[0],
+        self.axs[1, 2].quiver(origin[0],
                               origin[1],
                               origin[2],
                               z_vector[0],
@@ -79,7 +79,7 @@ class ObservationVisualiser(object):
                               length=L,
                               normalize=True,
                               color='b')
-        self.axs[1, 1].text(origin[0], origin[1], origin[2], frame_name)
+        self.axs[1, 2].text(origin[0], origin[1], origin[2], frame_name)
 
     def update(self):
         # Performs a non-blocking update of the figure
@@ -89,9 +89,9 @@ class ObservationVisualiser(object):
     def visualise(self, observations, step_count=None):
         if self.fig is None:
             plt.ion()
-            self.fig, self.axs = plt.subplots(2, 2)
-            self.axs[1, 1].remove()
-            self.axs[1, 1] = self.fig.add_subplot(2, 2, 4, projection='3d')
+            self.fig, self.axs = plt.subplots(2, 3)
+            self.axs[1, 2].remove()
+            self.axs[1, 2] = self.fig.add_subplot(2, 3, 6, projection='3d')
 
         self.fig.canvas.set_window_title("Agent Observations" + (
             "" if step_count is None else " (step # %d)" % step_count))
@@ -109,22 +109,78 @@ class ObservationVisualiser(object):
         self.axs[1, 0].get_xaxis().set_visible(False)
         self.axs[1, 0].get_yaxis().set_visible(False)
         self.axs[1, 0].set_title("image_depth")
+        # Doing a little filtering to ignore unlabelled pixels
         self.axs[0, 1].clear()
-        self.axs[0, 1].plot(0, 0, c='r', marker=">")
-        self.axs[0, 1].scatter(
+        class_segment_img = observations['image_segment']['class_segment_img']
+        masked_class_segment = np.ma.masked_where(class_segment_img == 0, 
+                                                  class_segment_img)
+        # make background black
+        self.axs[0, 1].set_facecolor((0,0,0))
+        num_class_colours = len(observations['image_segment']['class_ids'])+1
+        self.axs[0, 1].imshow(masked_class_segment,
+                              cmap='gist_rainbow',
+                              clim=(1,num_class_colours),
+                              interpolation='nearest')
+        self.axs[0, 1].get_xaxis().set_visible(False)
+        self.axs[0, 1].get_yaxis().set_visible(False)
+        self.axs[0, 1].set_title("image_class")
+        # Setup instance segmentation image for visualization
+        self.axs[1, 1].clear()
+        self.axs[1, 1].set_facecolor((0,0,0))
+        inst_segment_img = observations['image_segment']['instance_segment_img']
+        # Add two images to the image that should not overlap
+        # Images will contain class ID and instance ID adjacent with diagonals
+        
+        # Make diagonal pattern mask
+        diagonal_mask_img = np.zeros(inst_segment_img.shape, bool)
+        img_width = diagonal_mask_img.shape[1]
+        line_width = np.min(diagonal_mask_img.shape) // 20
+        bool_line = np.tile(np.append(np.ones(line_width, bool),
+                                      np.zeros(line_width, bool)),
+                            (img_width*2 // (line_width*2))+1)
+        for row_id in np.arange(diagonal_mask_img.shape[0]):
+            start_idx = img_width - row_id % img_width
+            diagonal_mask_img[row_id,:] = bool_line[start_idx:(start_idx+img_width)]
+        
+        # First image is the class id with stripes
+        masked_inst_class = np.ma.masked_where(np.logical_or(class_segment_img == 0,
+                                                              np.logical_not(diagonal_mask_img)), 
+                                               class_segment_img)
+        self.axs[1, 1].imshow(masked_inst_class,
+                              cmap='gist_rainbow',
+                              clim=(1, num_class_colours),
+                              interpolation='nearest')
+        
+        # Second image is the instance id with stripes
+        # NOTE Instance IDs and corresponding colours will change
+        # Between images
+        inst_id_img = inst_segment_img % 1000
+        masked_inst_segment = np.ma.masked_where(np.logical_or(inst_id_img == 0, 
+                                                               diagonal_mask_img), 
+                                                 inst_id_img)
+        self.axs[1, 1].imshow(masked_inst_segment,
+                              cmap='brg',
+                              clim=(1, np.amax(inst_id_img),),
+                              interpolation='nearest')
+        self.axs[1, 1].get_xaxis().set_visible(False)
+        self.axs[1, 1].get_yaxis().set_visible(False)
+        self.axs[1, 1].set_title("image_instance")
+        self.axs[0, 2].clear()
+        self.axs[0, 2].plot(0, 0, c='r', marker=">")
+        self.axs[0, 2].scatter(
             [x[0] * np.cos(x[1]) for x in observations['laser']['scans']],
             [x[0] * np.sin(x[1]) for x in observations['laser']['scans']],
             c='k',
             s=4,
             marker='s')
-        self.axs[0, 1].axis('equal')
-        self.axs[0, 1].set_title("laser (robot frame)")
-        self.axs[1, 1].clear()
+        self.axs[0, 2].axis('equal')
+        self.axs[0, 2].set_title("laser (robot frame)")
+        self.axs[1, 2].clear()
         self.__plot_frame('map', {'translation_xyz': [0, 0, 0]})
         for k, v in observations['poses'].items():
             self.__plot_frame(k, v)
         # self.axs[1, 1].axis('equal') Unimplemented for 3d plots... wow...
-        _set_axes_equal(self.axs[1, 1])
-        self.axs[1, 1].set_title("poses (world frame)")
+        _set_axes_equal(self.axs[1, 2])
+        self.axs[1, 2].set_title("poses (world frame)")
 
         self.update()
