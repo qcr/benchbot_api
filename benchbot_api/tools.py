@@ -32,7 +32,8 @@ def _set_axes_equal(ax):
 def create_diag_mask(mask_img, num_lines=7):
     diag_mask = np.zeros(mask_img.shape, bool)
     img_width = diag_mask.shape[1]
-    line_width = np.min(diag_mask.shape) // num_lines
+    # Note that minimum line width is 1
+    line_width = max([np.min(diag_mask.shape) // num_lines, 1])
     # TODO Magic numbers in here ... don't do that
     bool_line = np.tile(np.append(np.ones(line_width, bool),
                                   np.zeros(line_width, bool)),
