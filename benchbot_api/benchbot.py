@@ -23,7 +23,6 @@ TIMEOUT_SUPERVISOR = 60
 
 class _UnexpectedResponseError(requests.RequestException):
     """ """
-
     def __init__(self, http_status_code, *args, **kwargs):
         super(_UnexpectedResponseError, self).__init__(
             "Received an unexpected response from BenchBot supervisor "
@@ -191,10 +190,10 @@ class BenchBot(object):
             A list of actions the robot can take. If the robot has collided with an obstacle or finished its task, this list will be empty.
         """
         return ([] if self._receive('is_collided',
-                                    BenchBot.RouteType.ROBOT)['is_collided'] or
-                self._receive('is_finished',
-                              BenchBot.RouteType.ROBOT)['is_finished'] else
-                self._receive('actions', BenchBot.RouteType.CONFIG))
+                                    BenchBot.RouteType.ROBOT)['is_collided']
+                or self._receive('is_finished',
+                                 BenchBot.RouteType.ROBOT)['is_finished'] else
+                self._receive('task/actions', BenchBot.RouteType.CONFIG))
 
     @property
     def config(self):
@@ -209,7 +208,10 @@ class BenchBot(object):
 
     @property
     def environment_details(self):
-        names = self._receive('environment_names', BenchBot.RouteType.CONFIG)
+        names = [
+            e['name']
+            for e in self._receive('environments', BenchBot.RouteType.CONFIG)
+        ]
         return {
             'name': names[0].split('_')[0],
             'numbers': [x.split('_')[-1] for x in names]
@@ -224,22 +226,7 @@ class BenchBot(object):
         list
             A list of observations.
         """
-        return self._receive('observations', BenchBot.RouteType.CONFIG)
-
-    @property
-    def task_details(self):
-        """The details of the task.
-
-        Returns
-        -------
-        dict
-            The 'type', 'control_mode', and 'localisation_mode' of the task.
-        """
-        return {
-            k: v for k, v in zip(['type', 'control_mode', 'localisation_mode'],
-                                 self._receive('task_name', BenchBot.RouteType.
-                                               CONFIG).split(':'))
-        }
+        return self._receive('task/observations', BenchBot.RouteType.CONFIG)
 
     @property
     def result_filename(self):
@@ -379,9 +366,9 @@ class BenchBot(object):
 
         # Get references to all of the API callbacks in robot config
         self._connection_callbacks = {
-            k:
-            BenchBot._attempt_connection_imports(v) for k, v in self._receive(
-                'robot', BenchBot.RouteType.CONFIG)['connections'].items()
+            k: BenchBot._attempt_connection_imports(v)
+            for k, v in self._receive('robot', BenchBot.RouteType.CONFIG)
+            ['connections'].items()
         }
 
         # Ensure we are starting in a clean robot state
@@ -466,12 +453,12 @@ class BenchBot(object):
         if 'scd' in self.task_details['type']:
             raw_os.update({
                 'scene_number':
-                    self._receive('selected_env', BenchBot.RouteType.ROBOT)
-                    ['number']
+                self._receive('selected_env',
+                              BenchBot.RouteType.ROBOT)['number']
             })
         return ({
             k: (self._connection_callbacks[k](v) if
-                (k in self._connection_callbacks and
-                 self._connection_callbacks[k] is not None) else v)
+                (k in self._connection_callbacks
+                 and self._connection_callbacks[k] is not None) else v)
             for k, v in raw_os.items()
         }, action_result)
