@@ -259,10 +259,11 @@ class BenchBot(object):
                           BenchBot.RouteType.ROBOT)['is_collided']):
             raise RuntimeError("Collision stated detected for robot; "
                                "cannot proceed to next scene")
-        # TODO we should catch calling next when the task only has 1 scene_count
-        # elif 'semantic_slam' in self.task_details['type']:
-        #     raise RuntimeError("Semantic SLAM only consists of one scene; "
-        #                        "cannot proceed to next scene")
+        elif self._receive('task/scene_count', BenchBot.RouteType.CONFIG) < 2:
+            raise RuntimeError(
+                "Task '%s' only consists of one scene; "
+                "cannot proceed to next scene",
+                self._receive('task/name', BenchBot.RouteType.CONFIG))
 
         # Move to the next scene
         print("Moving to next scene ... ", end='')
@@ -270,10 +271,9 @@ class BenchBot(object):
             'next', BenchBot.RouteType.ROBOT)  # This should be a send...
         print("Done.")
 
-        # Raise an error if it failed (because it was called a second time)
-        if not resp['next_success']:
-            raise RuntimeError("Robot is already at final scene; "
-                               "cannot proceed to next scene")
+        # Return the result of moving to next (a failure means we are already
+        # at the last scene)
+        return resp['next_success']
 
     def reset(self):
         """Resets the robot state, and restarts the supervisor if necessary.
@@ -311,17 +311,12 @@ class BenchBot(object):
                     observations, self.actions)
                 observations, action_result = self.step(action, **action_args)
 
-        # Run through the first scene until done
+        # Run through the scenes until done
+        scene_count = self._receive('task/scene_count',
+                                    BenchBot.RouteType.CONFIG)
         scene_fn()
-
-        # Attempt to run through the second scene if in Scene Change Detection
-        # mode
-        # if 'scd' in self.task_details['type']:
-        #     self.next_scene()
-        #     scene_fn()
-
-        # Run through each scene until done
-        # TODO loop given scene count for task
+        while self.next_scene():
+            scene_fn()
 
         # We've made it to the end, we should save our results!
         self.agent.save_result(self.result_filename, self.empty_results(),
@@ -371,8 +366,8 @@ class BenchBot(object):
         }
 
         # Ensure we are starting in a clean robot state
-        if (self._receive('selected_env', BenchBot.RouteType.ROBOT)['number']
-                != 0):
+        if (self._receive('selected_environment',
+                          BenchBot.RouteType.ROBOT)['number'] != 0):
             print(
                 "Robot detected not to be in the first scene. "
                 "Performing restart ... ",
@@ -451,7 +446,8 @@ class BenchBot(object):
         raw_os = {o: self._receive(o) for o in self.observations}
         raw_os.update({
             'scene_number':
-            self._receive('selected_env', BenchBot.RouteType.ROBOT)['number']
+            self._receive('selected_environment',
+                          BenchBot.RouteType.ROBOT)['number']
         })
         return ({
             k: (self._connection_callbacks[k](v) if
