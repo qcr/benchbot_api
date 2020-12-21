@@ -207,17 +207,6 @@ class BenchBot(object):
         return self._receive('', BenchBot.RouteType.CONFIG)
 
     @property
-    def environment_details(self):
-        names = [
-            e['name']
-            for e in self._receive('environments', BenchBot.RouteType.CONFIG)
-        ]
-        return {
-            'name': names[0].split('_')[0],
-            'numbers': [x.split('_')[-1] for x in names]
-        }
-
-    @property
     def observations(self):
         """The list of observations the robot can see.
 
@@ -242,21 +231,27 @@ class BenchBot(object):
         return os.path.join(RESULT_LOCATION)
 
     def empty_object(self, num_classes=31):
-        p = {
-            'label_probs': [0] * num_classes,
-            'centroid': [0] * 3,
-            'extent': [0] * 3
-        }
-        if self.task_details['type'] == 'scd':
-            p['state_probs'] = [0] * 3
-        return p
+        # TODO this needs to be generalised!!!
+        # p = {
+        #     'label_probs': [0] * num_classes,
+        #     'centroid': [0] * 3,
+        #     'extent': [0] * 3
+        # }
+        # if self.task_details['type'] == 'scd':
+        #     p['state_probs'] = [0] * 3
+        # return p
+        return {}
 
     def empty_results(self):
-        return {
-            'task_details': self.task_details,
-            'environment_details': self.environment_details,
-            'objects': []
-        }
+        # TODO this needs to be generalised !!! (a BenchBot result requires
+        # 'task' & 'environments' fields, plus whatever is required by the
+        # results type)
+        # return {
+        #     'task_details': self.task_details,
+        #     'environment_details': self.environment_details,
+        #     'objects': []
+        # }
+        return {}
 
     def next_scene(self):
         # Bail if next is not a valid operation
@@ -264,9 +259,10 @@ class BenchBot(object):
                           BenchBot.RouteType.ROBOT)['is_collided']):
             raise RuntimeError("Collision stated detected for robot; "
                                "cannot proceed to next scene")
-        elif 'semantic_slam' in self.task_details['type']:
-            raise RuntimeError("Semantic SLAM only consists of one scene; "
-                               "cannot proceed to next scene")
+        # TODO we should catch calling next when the task only has 1 scene_count
+        # elif 'semantic_slam' in self.task_details['type']:
+        #     raise RuntimeError("Semantic SLAM only consists of one scene; "
+        #                        "cannot proceed to next scene")
 
         # Move to the next scene
         print("Moving to next scene ... ", end='')
@@ -320,9 +316,12 @@ class BenchBot(object):
 
         # Attempt to run through the second scene if in Scene Change Detection
         # mode
-        if 'scd' in self.task_details['type']:
-            self.next_scene()
-            scene_fn()
+        # if 'scd' in self.task_details['type']:
+        #     self.next_scene()
+        #     scene_fn()
+
+        # Run through each scene until done
+        # TODO loop given scene count for task
 
         # We've made it to the end, we should save our results!
         self.agent.save_result(self.result_filename, self.empty_results(),
@@ -450,12 +449,10 @@ class BenchBot(object):
 
         # Retrieve and return an updated set of observations
         raw_os = {o: self._receive(o) for o in self.observations}
-        if 'scd' in self.task_details['type']:
-            raw_os.update({
-                'scene_number':
-                self._receive('selected_env',
-                              BenchBot.RouteType.ROBOT)['number']
-            })
+        raw_os.update({
+            'scene_number':
+            self._receive('selected_env', BenchBot.RouteType.ROBOT)['number']
+        })
         return ({
             k: (self._connection_callbacks[k](v) if
                 (k in self._connection_callbacks
