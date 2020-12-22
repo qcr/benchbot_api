@@ -228,8 +228,8 @@ class ObservationVisualiser(object):
                 poses_subplt = (poses_plt_num % 2, poses_plt_num // 2)
                 poses_plt_num_h = poses_subplt[0]*self.axs.shape[1] + poses_subplt[1]+1
                 self.axs[poses_subplt].remove()
-                self.axs[poses_subplt] = self.fig.add_subplot(self.axs.shape[1], 
-                                                              self.axs.shape[0], 
+                self.axs[poses_subplt] = self.fig.add_subplot(self.axs.shape[0], 
+                                                              self.axs.shape[1], 
                                                               poses_plt_num_h, 
                                                               projection='3d')
 
