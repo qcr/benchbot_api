@@ -312,8 +312,6 @@ class BenchBot(object):
                 observations, action_result = self.step(action, **action_args)
 
         # Run through the scenes until done
-        scene_count = self._receive('task/scene_count',
-                                    BenchBot.RouteType.CONFIG)
         scene_fn()
         while self.next_scene():
             scene_fn()
