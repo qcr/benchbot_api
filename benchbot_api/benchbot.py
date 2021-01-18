@@ -108,60 +108,22 @@ class BenchBot(object):
                 "Cannot build address from invalid route type: %s" %
                 route_type)
 
-    def _receive(self, route_name=None, route_type=RouteType.CONNECTION):
-        """
-
-        Parameters
-        ----------
-        route_name :
-            Default value = None
-        route_type :
-            Default value = RouteType.CONNECTION
-
-        Returns
-        -------
-
-
-        """
+    def _query(self,
+               route_name=None,
+               route_type=RouteType.CONNECTION,
+               data=None,
+               method=requests.get):
+        data = {} if data is None else data
+        addr = self._build_address(route_name, route_type)
         try:
-            resp = requests.get(self._build_address(route_name, route_type))
+            resp = requests.get(addr, json=data)
             if resp.status_code >= 300:
                 raise _UnexpectedResponseError(resp.status_code)
             return jsonpickle.decode(resp.content)
         except:
             raise requests.ConnectionError(
-                "Communication failed with the BenchBot supervisor")
-
-    def _send(self,
-              route_name=None,
-              data=None,
-              route_type=RouteType.CONNECTION):
-        """
-
-        Parameters
-        ----------
-        route_name :
-            Default value = None
-        data :
-            Default value = None
-        route_type :
-            Default value = RouteType.CONNECTION
-
-        Returns
-        -------
-
-
-        """
-        data = {} if data is None else data
-        try:
-            resp = requests.post(self._build_address(route_name, route_type),
-                                 json=data)
-            if resp.status_code >= 300:
-                raise _UnexpectedResponseError(resp.status_code)
-        except:
-            raise requests.ConnectionError(
-                "Failed to establish a connection to BenchBot supervisor with "
-                "input data: %s, %s, %s" % (route_name, route_type.name, data))
+                "Communication to BenchBot supervisor "
+                "failed using the route:\n\t%s" % addr)
 
     @staticmethod
     def _attempt_connection_imports(connection_data):
@@ -192,11 +154,11 @@ class BenchBot(object):
         list
             A list of actions the robot can take. If the robot has collided with an obstacle or finished its task, this list will be empty.
         """
-        return ([] if self._receive('is_collided',
-                                    BenchBot.RouteType.ROBOT)['is_collided']
-                or self._receive('is_finished',
-                                 BenchBot.RouteType.ROBOT)['is_finished'] else
-                self._receive('task/actions', BenchBot.RouteType.CONFIG))
+        return ([] if self._query('is_collided',
+                                  BenchBot.RouteType.ROBOT)['is_collided']
+                or self._query('is_finished',
+                               BenchBot.RouteType.ROBOT)['is_finished'] else
+                self._query('task/actions', BenchBot.RouteType.CONFIG))
 
     @property
     def config(self):
@@ -207,7 +169,7 @@ class BenchBot(object):
         dict
             A dict of all configuration parameters as retrieved from the running BenchBot supervisor
         """
-        return self._receive('', BenchBot.RouteType.CONFIG)
+        return self._query('', BenchBot.RouteType.CONFIG)
 
     @property
     def observations(self):
@@ -218,7 +180,7 @@ class BenchBot(object):
         list
             A list of observations.
         """
-        return self._receive('task/observations', BenchBot.RouteType.CONFIG)
+        return self._query('task/observations', BenchBot.RouteType.CONFIG)
 
     @property
     def result_filename(self):
@@ -234,38 +196,30 @@ class BenchBot(object):
         return os.path.join(RESULT_LOCATION)
 
     def empty_results(self):
-        # TODO this needs to be generalised !!! (a BenchBot result requires
-        # 'task' & 'environments' fields, plus whatever is required by the
-        # results type)
-        # return {
-        #     'task_details': self.task_details,
-        #     'environment_details': self.environment_details,
-        #     'objects': []
-        # }
         return {
             'task_details':
-            self._receive('task', BenchBot.RouteType.CONFIG),
+            self._query('task', BenchBot.RouteType.CONFIG),
             'environment_details':
-            self._receive('environments', BenchBot.RouteType.CONFIG),
+            self._query('environments', BenchBot.RouteType.CONFIG),
             'results':
-            self._receive('create', BenchBot.RouteType.RESULTS)
+            self._query('create', BenchBot.RouteType.RESULTS)
         }
 
     def next_scene(self):
         # Bail if next is not a valid operation
-        if (self._receive('is_collided',
-                          BenchBot.RouteType.ROBOT)['is_collided']):
+        if (self._query('is_collided',
+                        BenchBot.RouteType.ROBOT)['is_collided']):
             raise RuntimeError("Collision stated detected for robot; "
                                "cannot proceed to next scene")
-        elif self._receive('task/scene_count', BenchBot.RouteType.CONFIG) < 2:
+        elif self._query('task/scene_count', BenchBot.RouteType.CONFIG) < 2:
             raise RuntimeError(
                 "Task '%s' only consists of one scene; "
                 "cannot proceed to next scene",
-                self._receive('task/name', BenchBot.RouteType.CONFIG))
+                self._query('task/name', BenchBot.RouteType.CONFIG))
 
         # Move to the next scene
         print("Moving to next scene ... ", end='')
-        resp = self._receive(
+        resp = self._query(
             'next', BenchBot.RouteType.ROBOT)  # This should be a send...
         print("Done.")
 
@@ -282,11 +236,11 @@ class BenchBot(object):
             Observations and action result at the start of the task.
         """
         # Only restart the supervisor if it is in a dirty state
-        if self._receive('is_dirty', BenchBot.RouteType.ROBOT)['is_dirty']:
+        if self._query('is_dirty', BenchBot.RouteType.ROBOT)['is_dirty']:
             print("Dirty robot state detected. Performing reset ... ", end='')
             sys.stdout.flush()
-            self._receive('reset',
-                          BenchBot.RouteType.ROBOT)  # This should be a send...
+            self._query('reset',
+                        BenchBot.RouteType.ROBOT)  # This should be a send...
             print("Complete.")
         return self.step(None)
 
@@ -334,7 +288,7 @@ class BenchBot(object):
         connected = False
         while not connected and time.time() - start_time < TIMEOUT_SUPERVISOR:
             try:
-                self._receive("/", BenchBot.RouteType.EXPLICIT)
+                self._query("/", BenchBot.RouteType.EXPLICIT)
                 connected = True
             except:
                 pass
@@ -349,28 +303,28 @@ class BenchBot(object):
         print("Waiting to establish connection to a running robot ... ",
               end='')
         sys.stdout.flush()
-        while (not self._receive("is_running",
-                                 BenchBot.RouteType.ROBOT)['is_running']):
+        while (not self._query("is_running",
+                               BenchBot.RouteType.ROBOT)['is_running']):
             time.sleep(0.1)
         print("Connected!")
 
         # Get references to all of the API callbacks in robot config
         self._connection_callbacks = {
             k: BenchBot._attempt_connection_imports(v)
-            for k, v in self._receive('robot', BenchBot.RouteType.CONFIG)
+            for k, v in self._query('robot', BenchBot.RouteType.CONFIG)
             ['connections'].items()
         }
 
         # Ensure we are starting in a clean robot state
-        if (self._receive('selected_environment',
-                          BenchBot.RouteType.ROBOT)['number'] != 0):
+        if (self._query('selected_environment',
+                        BenchBot.RouteType.ROBOT)['number'] != 0):
             print(
                 "Robot detected not to be in the first scene. "
                 "Performing restart ... ",
                 end='')
             sys.stdout.flush()
-            self._receive('restart',
-                          BenchBot.RouteType.ROBOT)  # This should be a send...
+            self._query('restart',
+                        BenchBot.RouteType.ROBOT)  # This should be a send...
         else:
             self.reset()
 
@@ -418,32 +372,34 @@ class BenchBot(object):
             if action not in self.actions:
                 raise ValueError(
                     "Action '%s' is unavailable due to: %s" %
-                    (action, ('COLLISION' if self._receive(
+                    (action, ('COLLISION' if self._query(
                         'is_collided', BenchBot.RouteType.ROBOT)['is_collided']
-                              else 'FINISHED' if self._receive(
+                              else 'FINISHED' if self._query(
                                   'is_finished', BenchBot.RouteType.ROBOT)
                               ['is_finished'] else 'WRONG_ACTUATION_MODE?')))
 
             # Made it through checks, actually perform the action
             print("Sending action '%s' with args: %s" %
                   (action, action_kwargs))
-            self._send(action, action_kwargs, BenchBot.RouteType.CONNECTION)
+            self._query(action, BenchBot.RouteType.CONNECTION, action_kwargs)
 
         # Derive action_result (TODO should probably not be this flimsy...)
         action_result = ActionResult.SUCCESS
-        if self._receive('is_collided',
-                         BenchBot.RouteType.ROBOT)['is_collided']:
+        if self._query('is_collided', BenchBot.RouteType.ROBOT)['is_collided']:
             action_result = ActionResult.COLLISION
-        elif self._receive('is_finished',
-                           BenchBot.RouteType.ROBOT)['is_finished']:
+        elif self._query('is_finished',
+                         BenchBot.RouteType.ROBOT)['is_finished']:
             action_result = ActionResult.FINISHED
 
         # Retrieve and return an updated set of observations
-        raw_os = {o: self._receive(o) for o in self.observations}
+        raw_os = {
+            o: self._query(o, BenchBot.RouteType.CONNECTION)
+            for o in self.observations
+        }
         raw_os.update({
             'scene_number':
-            self._receive('selected_environment',
-                          BenchBot.RouteType.ROBOT)['number']
+            self._query('selected_environment',
+                        BenchBot.RouteType.ROBOT)['number']
         })
         return ({
             k: (self._connection_callbacks[k](v) if
