@@ -57,7 +57,8 @@ class BenchBot(object):
         CONNECTION = 0,
         CONFIG = 1,
         ROBOT = 2,
-        EXPLICIT = 3
+        RESULTS = 3,
+        EXPLICIT = 4
 
     def __init__(self,
                  agent=None,
@@ -98,6 +99,8 @@ class BenchBot(object):
             return base + 'config/' + route_name
         elif route_type == BenchBot.RouteType.ROBOT:
             return base + 'robot/' + route_name
+        elif route_type == BenchBot.RouteType.RESULTS:
+            return base + 'results_functions/' + route_name
         elif route_type == BenchBot.RouteType.EXPLICIT:
             return base + route_name
         else:
@@ -230,18 +233,6 @@ class BenchBot(object):
             os.makedirs(os.path.dirname(RESULT_LOCATION))
         return os.path.join(RESULT_LOCATION)
 
-    def empty_object(self, num_classes=31):
-        # TODO this needs to be generalised!!!
-        # p = {
-        #     'label_probs': [0] * num_classes,
-        #     'centroid': [0] * 3,
-        #     'extent': [0] * 3
-        # }
-        # if self.task_details['type'] == 'scd':
-        #     p['state_probs'] = [0] * 3
-        # return p
-        return {}
-
     def empty_results(self):
         # TODO this needs to be generalised !!! (a BenchBot result requires
         # 'task' & 'environments' fields, plus whatever is required by the
@@ -251,7 +242,14 @@ class BenchBot(object):
         #     'environment_details': self.environment_details,
         #     'objects': []
         # }
-        return {}
+        return {
+            'task_details':
+            self._receive('task', BenchBot.RouteType.CONFIG),
+            'environment_details':
+            self._receive('environments', BenchBot.RouteType.CONFIG),
+            'results':
+            self._receive('create', BenchBot.RouteType.RESULTS)
+        }
 
     def next_scene(self):
         # Bail if next is not a valid operation
