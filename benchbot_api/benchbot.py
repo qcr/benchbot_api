@@ -244,6 +244,16 @@ class BenchBot(object):
             print("Complete.")
         return self.step(None)
 
+    def results_functions(self):
+        return {
+            r: lambda *args, _fn=r, **kwargs: self._query(
+                '/%s' % _fn, BenchBot.RouteType.RESULTS, {
+                    'args': args,
+                    'kwargs': kwargs
+                })
+            for r in self._query('/', BenchBot.RouteType.RESULTS)
+        }
+
     def run(self):
         """Helper function that runs the robot according to the agent given.
         Use this function as the basis for implementing a custom AI loop.
@@ -269,15 +279,8 @@ class BenchBot(object):
             scene_fn()
 
         # We've made it to the end, we should save our results!
-        self.agent.save_result(
-            self.result_filename, self.empty_results(), {
-                r: lambda _fn=r, *args, **kwargs: self._query(
-                    '/%s' % _fn, BenchBot.RouteType.RESULTS, {
-                        'args': args,
-                        'kwargs': kwargs
-                    })
-                for r in self._query('/', BenchBot.RouteType.RESULTS)
-            })
+        self.agent.save_result(self.result_filename, self.empty_results(),
+                               self.results_functions())
 
     def start(self):
         """Connects to the supervisor and initialises the connection callbacks.
