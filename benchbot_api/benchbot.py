@@ -269,8 +269,15 @@ class BenchBot(object):
             scene_fn()
 
         # We've made it to the end, we should save our results!
-        self.agent.save_result(self.result_filename, self.empty_results(),
-                               self.empty_object)
+        self.agent.save_result(
+            self.result_filename, self.empty_results(), {
+                r: lambda _fn=r, *args, **kwargs: self._query(
+                    '/%s' % _fn, BenchBot.RouteType.RESULTS, {
+                        'args': args,
+                        'kwargs': kwargs
+                    })
+                for r in self._query('/', BenchBot.RouteType.RESULTS)
+            })
 
     def start(self):
         """Connects to the supervisor and initialises the connection callbacks.
