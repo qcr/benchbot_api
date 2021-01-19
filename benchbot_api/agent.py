@@ -40,7 +40,7 @@ class Agent(ABCMeta('ABC', (object, ), {})):
         return None
 
     @abstractmethod
-    def save_result(self, filename, empty_results, result_format_fns):
+    def save_result(self, filename, empty_results, results_format_fns):
         """
         Method should write your results for the task to the file specified by
         'filename'. The method returns no value, so if there is any failure in
@@ -53,7 +53,7 @@ class Agent(ABCMeta('ABC', (object, ), {})):
         common to all results ('environment_details' & 'task_details'), as well
         as the return of the results format's 'create' function.
 
-        The 'result_format_fns' contains all of the functions defined for that
+        The 'results_format_fns' contains all of the functions defined for that
         format, and can be useful for specialist actions (e.g. creating objects
         in scene understanding object maps).
         """
