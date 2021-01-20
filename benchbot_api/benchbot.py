@@ -211,16 +211,10 @@ class BenchBot(object):
                         BenchBot.RouteType.ROBOT)['is_collided']):
             raise RuntimeError("Collision stated detected for robot; "
                                "cannot proceed to next scene")
-        elif self._query('task/scene_count', BenchBot.RouteType.CONFIG) < 2:
-            raise RuntimeError(
-                "Task '%s' only consists of one scene; "
-                "cannot proceed to next scene",
-                self._query('task/name', BenchBot.RouteType.CONFIG))
 
         # Move to the next scene
         print("Moving to next scene ... ", end='')
-        resp = self._query(
-            'next', BenchBot.RouteType.ROBOT)  # This should be a send...
+        resp = self._query('next', BenchBot.RouteType.ROBOT)
         print("Done.")
 
         # Return the result of moving to next (a failure means we are already
