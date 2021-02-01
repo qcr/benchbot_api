@@ -214,8 +214,9 @@ class BenchBot(object):
 
         # Move to the next scene
         print("Moving to next scene ... ", end='')
+        sys.stdout.flush()
         resp = self._query('next', BenchBot.RouteType.ROBOT)
-        print("Done." if resp['next_success'] else "FAILED.")
+        print("Done." if resp['next_success'] else "Failed.")
 
         # Return the result of moving to next (a failure means we are already
         # at the last scene)
@@ -327,8 +328,8 @@ class BenchBot(object):
                 "Performing restart ... ",
                 end='')
             sys.stdout.flush()
-            self._query('restart',
-                        BenchBot.RouteType.ROBOT)  # This should be a send...
+            self._query('restart', BenchBot.RouteType.ROBOT)
+            print("Done.")
         else:
             self.reset()
 
