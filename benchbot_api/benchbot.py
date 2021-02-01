@@ -215,7 +215,7 @@ class BenchBot(object):
         # Move to the next scene
         print("Moving to next scene ... ", end='')
         resp = self._query('next', BenchBot.RouteType.ROBOT)
-        print("Done.")
+        print("Done." if resp['next_success'] else "FAILED.")
 
         # Return the result of moving to next (a failure means we are already
         # at the last scene)
