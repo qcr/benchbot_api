@@ -115,11 +115,11 @@ The `action_result` is an enumerated value denoting the result of the action (us
 
 ### Standard Communication Channels
 
-Tasks and robot definition files declare actions and observations, and these files are include through [BenchBot Add-ons](https://github.com/roboticvisionorg/benchbot_addons). The add-on creator is free to add and declare channels as they please, but it is a better experience for all if channel definitions are as consistent as possible across the BenchBot ecosystem.
+Tasks and robot definition files declare actions and observations, and these files are include through [BenchBot add-ons](https://github.com/roboticvisionorg/benchbot_addons). The add-on creator is free to add and declare channels as they please, but it is a better experience for all if channel definitions are as consistent as possible across the BenchBot ecosystem.
 
 So if you're adding a robot that move between a set of poses, declare a channel called `'move_next` with no arguments. Likewise, a robot that receives image observations should use a channel named `'image_rgb'` with the same format as described below. Feel free to implement the channels however you please for your robot, but consistent interfaces should always be preferred.
 
-If you encounter a task using non-standard channel configurations, the API has all the functionality you need as a user to handle them (`actions` & `config` properties, plus observation dict returned by `step()` & `reset()`). On the other hand, maybe the non-standard channel should be a new standard. New standard communication channels are always welcome; please open a pull request with the details!
+If you encounter a task using non-standard channel configurations, the API has all the functionality you need as a user to handle them (`actions`, `config`, & `observations` properties). On the other hand, maybe the non-standard channel should be a new standard. New standard communication channels are always welcome; please open a pull request with the details!
 
 #### Standard action channels:
 
@@ -164,6 +164,7 @@ The API handles communication for all parts of the BenchBot system, including co
 | API method or property        | Description                                                                                                                                                                                                  |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `actions`                     | Returns the list of actions currently available to the agent. This will update as actions are performed in the environment (for example if the agent has collided with an obstacle this list will be empty). |
+| `observations`                | Returns the lists of observations available to the agent.                                                                                                                                                    |
 | `step(action, **action_args)` | Performs the requested action with the provided named action arguments. See [Using the API to communicate with a robot](#using-the-api-to-communicate-with-a-robot) above for further details.               |
 
 ### Creating results
