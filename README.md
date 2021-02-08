@@ -81,7 +81,7 @@ u@pc:~$ pip install .
 
 Communication with the robot comes through a series of "channels" which are defined by the robot's definition file (e.g. [carter](https://github.com/benchbot-addons/robots_isaac/blob/master/robots/carter.yaml)). A task definition file (e.g. [semantic_slam:passive:ground_truth](https://github.com/benchbot-addons/tasks_ssu/blob/master/tasks/sslam_pgt.yaml)) then declares which of these connections are provided to the API as either sensor observations or actions to be executed by a robot actuator.
 
-The API talks to the [BenchBot Supervisor](https://github.com/roboticvisionorg/benchbot_supervisor), which handles loading and managing of all the different kinds of back-end configuration files. This abstracts all of the underlying communication complexities away from the user, allowing the BenchBot API to remain a simple interface that focuses on getting observations and sending actions.
+The API talks to the [BenchBot Supervisor](https://github.com/roboticvisionorg/benchbot_supervisor), which handles loading and managing the different kinds of back-end configuration files. This abstracts all of the underlying communication complexities away from the user, allowing the BenchBot API to remain a simple interface that focuses on getting observations and sending actions.
 
 An action is sent to the robot by calling the `BenchBot.step()` method with a valid action (found by checking the `BenchBot.actions` property):
 
@@ -93,9 +93,9 @@ available_actions = b.actions
 b.step(b.actions[0], {'action_arg:', arg_value})  # Perform the first available action
 ```
 
-The second parameter is a dictionary of named arguments for the selected action. For example, moving 5m forward with the `'move_distance'` action is represented by the dictionary `{'distance': 5}`. A full list of actions and arguments for the default channel set is shown below.
+The second parameter is a dictionary of named arguments for the selected action. For example, moving 5m forward with the `'move_distance'` action is represented by the dictionary `{'distance': 5}`.
 
-Observations are simply received as return values from a `BenchBot.step()` call (`BenchBot.reset()` internally calls `BenchBot.step(None)`, which means don't perform an action):
+Observations lists are received as return values from a `BenchBot.step()` call (`BenchBot.reset()` internally calls `BenchBot.step(None)`, which means don't perform an action):
 
 ```python
 from benchbot_api import BenchBot
@@ -105,7 +105,7 @@ observations, action_result = b.reset()
 observations, action_result = b.step('move_distance', {'distance': 5})
 ```
 
-The returned `observations` variable holds a dictionary with key-value pairs corresponding to the name-data defined by each observation channel. A full list of observation channels for the default channel set is provided below.
+The returned `observations` variable holds a dictionary with key-value pairs corresponding to the name-data defined by each observation channel.
 
 The `action_result` is an enumerated value denoting the result of the action (use `from benchbot_api import ActionResult` to access the `Enum` class). You should use this result to guide the progression of your algorithm either manually or in the `is_done()` method of your `Agent`. Possible values for the returned `action_result` are:
 
@@ -113,17 +113,23 @@ The `action_result` is an enumerated value denoting the result of the action (us
 - `ActionResult.FINISHED`: the action was carried out successfully, and the robot is now finished its traversal through the scene (only used in `passive` actuation mode)
 - `ActionResult.COLLISION`: the action crashed the robot into an obstacle, and as a result it will not respond to any further actuation commands (at this point you should quit)
 
-### Default Communication Channel List
+### Standard Communication Channels
 
-#### Action Channels:
+Tasks and robot definition files declare actions and observations, and these files are include through [BenchBot Add-ons](https://github.com/roboticvisionorg/benchbot_addons). The add-on creator is free to add and declare channels as they please, but it is a better experience for all if channel definitions are as consistent as possible across the BenchBot ecosystem.
 
-| Name              |       Required Arguments       | Description                                                                                         |
-| ----------------- | :----------------------------: | --------------------------------------------------------------------------------------------------- |
-| `'move_next'`     |             `None`             | Moves the robot to the next pose in its list of pre-defined poses (only available in passive mode). |
-| `'move_distance'` | <pre>{'distance': float}</pre> | Moves the robot `'distance'` metres directly ahead (only available in active mode).                 |
-| `'move_angle'`    |  <pre>{'angle': float}</pre>   | Rotate the angle on the spot by `'angle'` degrees (only available in active mode).                  |
+So if you're adding a robot that move between a set of poses, declare a channel called `'move_next` with no arguments. Likewise, a robot that receives image observations should use a channel named `'image_rgb'` with the same format as described below. Feel free to implement the channels however you please for your robot, but consistent interfaces should always be preferred.
 
-#### Observation Channels:
+If you encounter a task using non-standard channel configurations, the API has all the functionality you need as a user to handle them (`actions` & `config` properties, plus observation dict returned by `step()` & `reset()`). On the other hand, maybe the non-standard channel should be a new standard. New standard communication channels are always welcome; please open a pull request with the details!
+
+#### Standard action channels:
+
+| Name              |       Required Arguments       | Description                                                                                                                                   |
+| ----------------- | :----------------------------: | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'move_next'`     |             `None`             | Moves the robot to the next pose in its list of pre-defined poses (only available in environments that declare a `'trajectory_poses'` field). |
+| `'move_distance'` | <pre>{'distance': float}</pre> | Moves the robot `'distance'` metres directly ahead.                                                                                           |
+| `'move_angle'`    |  <pre>{'angle': float}</pre>   | Rotate the angle on the spot by `'angle'` degrees.                                                                                            |
+
+#### Standard observation channels:
 
 | Name                 | Data format                                                                                                                                                                                                                                                                                                     | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | -------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -138,34 +144,32 @@ The `action_result` is an enumerated value denoting the result of the action (us
 
 A running BenchBot system manages many other elements besides simply getting data to and from a real / simulated robot. BenchBot encapsulates not just the robot, but also the environment it is operating in (whether that be simulator or real) and task that is currently being attempted.
 
-As such, the BenchBot API facilitates communication regarding all parts of the BenchBot system including controlling the currently running environment and obtaining configuration information. Below are details for some of the more useful other features of the API (all features are also documented in the `benchbot.py` source code).
+The API handles communication for all parts of the BenchBot system, including controlling the currently running environment and obtaining configuration information. Below are details for some of the more useful features of the API (all features are also documented in the [`benchbot.py`](./benchbot_api/benchbot.py) source code).
 
 ### Gathering configuration information
 
-| API method or property | Description                                                                                                                                                                                                                            |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `environment_details`  | Returns a `dict` describing the environment that is currently running. It contains fields: `'name: string'` & '`'numbers: list'`' (length of 1 or 2 depending on whether the current task is Semantic SLAM or Scene Change Detection). |
-| `task_details`         | Returns a `dict` describing the currently selected task. It contains fields: `'control_mode': 'active                                                                                                                                  | passive'`, `'localisation_mode': 'ground_truth | dead_reckoning'`, & `'type': 'semantic_slam | scd'`. |
-| `config`               | Returns a `dict` exhaustively describing the current BenchBot configuration. Most of the information returned will not be useful for general BenchBot use.                                                                             |
+| API method or property | Description                                                                                                                                                |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `config`               | Returns a `dict` exhaustively describing the current BenchBot configuration. Most of the information returned will not be useful for general BenchBot use. |
 
 ### Interacting with the environment
 
-| API method or property | Description                                                                                                                                                                                                                                                             |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `reset()`              | Resets the current environment scene. For the simulator, this means restarting the running simulator instance with the robot back at its initial position. The method returns `observations`, & the `action_result` (should always be `BenchBot.ActionResult.SUCCESS`). |
-| `next_scene()`         | Starts the next scene in the current environment (only relevant for Scene Change Detection tasks). Note there is no going back once you have moved to the next scene. Returns the same as `reset()`.                                                                    |
+| API method or property | Description                                                                                                                                                                                                                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reset()`              | Resets the current environment scene. For the simulator, this means restarting the running simulator instance with the robot back at its initial position. The method returns initial `observations`, & the `action_result` (should always be `BenchBot.ActionResult.SUCCESS`). |
+| `next_scene()`         | Starts the next scene in the current environment (only relevant for tasks with multiple scenes). Note there is no going back once you have moved to the next scene. Returns the same as `reset()`.                                                                              |
 
 ### Interacting with an agent
 
 | API method or property        | Description                                                                                                                                                                                                  |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `actions`                     | Returns the list of actions currently available to the agent. This will update as actions are performed in the environment (for example if the agent has collided with an obstacle this list will be empty). |
-| `step(action, **action_args)` | Performs the requested action with the provided named action arguments. See "Using the API to communicate with a robot" above for further details.                                                           |
+| `step(action, **action_args)` | Performs the requested action with the provided named action arguments. See [Using the API to communicate with a robot](#using-the-api-to-communicate-with-a-robot) above for further details.               |
 
 ### Creating results
 
-| API method or property                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `empty_results()`                               | Generates a `dict` of results with an empty map containing no objects. The `dict` already has all of the required fields pre-filled with relevant data (e.g. environment & task details). To create results, all a user needs to do is fill in the empty `'objects'` field. <br><br>If a user wishes to use a custom class list instead of [our default class list](https://github.com/roboticvisionorg/benchbot_eval#benchbot-evaluation), they can add the `'class_list'` field. |
-| `empty_object(num_classes=31)`                  | Generates a `dict` representing an empty object for an object-based semantic map. The `'label_probs'` field is given the length of [our default class list](https://github.com/roboticvisionorg/benchbot_eval#benchbot-evaluation), but can be overidden by specifying the `num_classes` argument. The `'state_probs'` field will only be present when running in SCD mode.                                                                                                        |
-| `RESULT_LOCATION` (outside of `BenchBot` class) | A static string denoting where results should be saved (`/tmp/results`). Using this locations ensures tools in the [BenchBot software stack](https://github.com/roboticvisionorg/benchbot) work as expected.                                                                                                                                                                                                                                                                       |
+| API method or property                          | Description                                                                                                                                                                                                                                                                                                                           |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `empty_results()`                               | Generates a `dict` of with required result metadata & empty results. Metadata (`'task_details'` & `'environment_details'`) is pre-filled. To create results, all a user needs to do is fill in the empty `'results'` field using format's results functions. These functions are available through the `'results_functions()` method. |
+| `results_functions()`                           | Returns a `dict` of functions defined by the task's `'results_format'`. Example use for calling a `create()` function is `results_functions()['create']()`.                                                                                                                                                                           |
+| `RESULT_LOCATION` (outside of `BenchBot` class) | A static string denoting where results should be saved (`/tmp/results`). Using this locations ensures tools in the [BenchBot software stack](https://github.com/roboticvisionorg/benchbot) work as expected.                                                                                                                          |
