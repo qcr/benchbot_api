@@ -409,19 +409,6 @@ class BenchBot(object):
         """
         # Perform the requested action if possible
         if action is not None:
-            # Detect unsupported actions
-            if action not in BenchBot.SUPPORTED_ACTIONS:
-                raise ValueError(
-                    "Action '%s' is not a valid action (valid actions are: %s)."
-                    % (action, ', '.join(BenchBot.SUPPORTED_ACTIONS.keys())))
-            else:
-                missing_keys = (set(BenchBot.SUPPORTED_ACTIONS[action]) -
-                                set(action_kwargs.keys()))
-                if missing_keys:
-                    raise ValueError(
-                        "Action '%s' requires argument '%s' which was not "
-                        "provided." % (action, missing_keys.pop()))
-
             # Detect actions unavailable due to robot state
             if action not in self.actions:
                 raise ValueError(
