@@ -1,4 +1,4 @@
-**NOTE: this software needs to interface with a running instance of the BenchBot software stack. Unless you are running against a remote stack / robot, please install this software with the BenchBot software stack as described [here](https://github.com/roboticvisionorg/benchbot).**
+**NOTE: this software needs to interface with a running instance of the BenchBot software stack. Unless you are running against a remote stack / robot, please install this software with the BenchBot software stack as described [here](https://github.com/qcr/benchbot).**
 
 # BenchBot API
 
@@ -81,7 +81,7 @@ u@pc:~$ pip install .
 
 Communication with the robot comes through a series of "channels" which are defined by the robot's definition file (e.g. [carter](https://github.com/benchbot-addons/robots_isaac/blob/master/robots/carter.yaml)). A task definition file (e.g. [semantic_slam:passive:ground_truth](https://github.com/benchbot-addons/tasks_ssu/blob/master/tasks/sslam_pgt.yaml)) then declares which of these connections are provided to the API as either sensor observations or actions to be executed by a robot actuator.
 
-The API talks to the [BenchBot Supervisor](https://github.com/roboticvisionorg/benchbot_supervisor), which handles loading and managing the different kinds of back-end configuration files. This abstracts all of the underlying communication complexities away from the user, allowing the BenchBot API to remain a simple interface that focuses on getting observations and sending actions.
+The API talks to the [BenchBot Supervisor](https://github.com/qcr/benchbot_supervisor), which handles loading and managing the different kinds of back-end configuration files. This abstracts all of the underlying communication complexities away from the user, allowing the BenchBot API to remain a simple interface that focuses on getting observations and sending actions.
 
 An action is sent to the robot by calling the `BenchBot.step()` method with a valid action (found by checking the `BenchBot.actions` property):
 
@@ -115,7 +115,7 @@ The `action_result` is an enumerated value denoting the result of the action (us
 
 ### Standard Communication Channels
 
-Tasks and robot definition files declare actions and observations, and these files are include through [BenchBot add-ons](https://github.com/roboticvisionorg/benchbot_addons). The add-on creator is free to add and declare channels as they please, but it is a better experience for all if channel definitions are as consistent as possible across the BenchBot ecosystem.
+Tasks and robot definition files declare actions and observations, and these files are include through [BenchBot add-ons](https://github.com/qcr/benchbot_addons). The add-on creator is free to add and declare channels as they please, but it is a better experience for all if channel definitions are as consistent as possible across the BenchBot ecosystem.
 
 So if you're adding a robot that move between a set of poses, declare a channel called `'move_next` with no arguments. Likewise, a robot that receives image observations should use a channel named `'image_rgb'` with the same format as described below. Feel free to implement the channels however you please for your robot, but consistent interfaces should always be preferred.
 
@@ -173,4 +173,4 @@ The API handles communication for all parts of the BenchBot system, including co
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `empty_results()`                               | Generates a `dict` of with required result metadata & empty results. Metadata (`'task_details'` & `'environment_details'`) is pre-filled. To create results, all a user needs to do is fill in the empty `'results'` field using format's results functions. These functions are available through the `'results_functions()` method. |
 | `results_functions()`                           | Returns a `dict` of functions defined by the task's `'results_format'`. Example use for calling a `create()` function is `results_functions()['create']()`.                                                                                                                                                                           |
-| `RESULT_LOCATION` (outside of `BenchBot` class) | A static string denoting where results should be saved (`/tmp/results`). Using this locations ensures tools in the [BenchBot software stack](https://github.com/roboticvisionorg/benchbot) work as expected.                                                                                                                          |
+| `RESULT_LOCATION` (outside of `BenchBot` class) | A static string denoting where results should be saved (`/tmp/results`). Using this locations ensures tools in the [BenchBot software stack](https://github.com/qcr/benchbot) work as expected.                                                                                                                          |

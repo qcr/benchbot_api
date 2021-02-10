@@ -35,7 +35,7 @@ class Agent(ABCMeta('ABC', (object, ), {})):
 
         The current list of possible actions (& required arguments) is
         available here:
-            https://github.com/roboticvisionorg/benchbot_api#default-communication-channel-list
+            https://github.com/qcr/benchbot_api#default-communication-channel-list
         """
         return None
 
