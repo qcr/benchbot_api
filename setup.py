@@ -4,11 +4,10 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(name='benchbot_api',
-      version='1.1.0',
+      version='2.0.0',
       author='Ben Talbot',
       author_email='b.talbot@qut.edu.au',
-      description=
-      'The BenchBot API for use with the ACRV Scene Understanding Challenge',
+      description='The BenchBot API for use with the BenchBot software stack',
       long_description=long_description,
       long_description_content_type='text/markdown',
       packages=find_packages(),
