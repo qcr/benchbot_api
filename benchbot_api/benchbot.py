@@ -261,7 +261,7 @@ class BenchBot(object):
         # Bail if next is not a valid operation
         if (self._query('is_collided',
                         BenchBot.RouteType.ROBOT)['is_collided']):
-            raise RuntimeError("Collision stated detected for robot; "
+            raise RuntimeError("Collision state detected for robot; "
                                "cannot proceed to next scene")
 
         # Move to the next scene
