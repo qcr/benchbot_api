@@ -80,7 +80,9 @@ class BenchBot(object):
         self.supervisor_address = supervisor_address
         self._connection_callbacks = {}
 
-        self.set_agent(agent, auto_start)
+        if auto_start:
+            self.start()
+        self.set_agent(agent)
 
     def _build_address(self, route_name, route_type=RouteType.CONNECTION):
         """Builds an address for communication with a running instance of 
@@ -304,8 +306,10 @@ class BenchBot(object):
         Generally, you should use this function and implement your object in
         your own custom agent class. 
         """
+        print("SETTING AGENT")
         if agent is not None:
             self.set_agent(agent)
+        print("SET AGENT")
         if self.agent is None:
             raise RuntimeError(
                 "Can't call Benchbot.run() without an agent attached. Either "
@@ -329,7 +333,7 @@ class BenchBot(object):
         self.agent.save_result(self.result_filename, self.empty_results(),
                                self.results_functions())
 
-    def set_agent(self, agent, auto_start=True):
+    def set_agent(self, agent):
         """Updates the current agent, and starts its connection with a BenchBot
         Supervisor if requested"""
         if agent is None:
@@ -341,8 +345,6 @@ class BenchBot(object):
                              "which is not an instance of '%s'." %
                              (agent.__class__.__name__, Agent.__name__))
         self.agent = agent
-        if auto_start:
-            self.start()
 
     def start(self):
         """Establishes a connect to the Supervisor, and then uses this to
