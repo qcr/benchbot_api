@@ -306,10 +306,8 @@ class BenchBot(object):
         Generally, you should use this function and implement your object in
         your own custom agent class. 
         """
-        print("SETTING AGENT")
         if agent is not None:
             self.set_agent(agent)
-        print("SET AGENT")
         if self.agent is None:
             raise RuntimeError(
                 "Can't call Benchbot.run() without an agent attached. Either "
