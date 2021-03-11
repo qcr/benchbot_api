@@ -242,8 +242,8 @@ class BenchBot(object):
             self._query('task', BenchBot.RouteType.CONFIG),
             'environment_details':
             self._query('environments', BenchBot.RouteType.CONFIG),
-            'results':
-            self._query('create', BenchBot.RouteType.RESULTS)
+            'results': (self._query('create', BenchBot.RouteType.RESULTS)
+                        if self.config['results'] else {})
         }
 
     def next_scene(self):
