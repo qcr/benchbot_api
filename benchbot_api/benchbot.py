@@ -76,16 +76,13 @@ class BenchBot(object):
                  supervisor_address='http://' + DEFAULT_ADDRESS + ':' +
                  str(DEFAULT_PORT) + '/',
                  auto_start=True):
-        if agent is not None and not isinstance(agent, Agent):
-            raise ValueError("BenchBot received an agent of type '%s' "
-                             "which is not an instance of '%s'." %
-                             (agent.__class__.__name__, Agent.__name__))
-        self.agent = agent
-
+        self.agent = None
         self.supervisor_address = supervisor_address
         self._connection_callbacks = {}
+
         if auto_start:
             self.start()
+        self.set_agent(agent)
 
     def _build_address(self, route_name, route_type=RouteType.CONNECTION):
         """Builds an address for communication with a running instance of 
@@ -245,8 +242,8 @@ class BenchBot(object):
             self._query('task', BenchBot.RouteType.CONFIG),
             'environment_details':
             self._query('environments', BenchBot.RouteType.CONFIG),
-            'results':
-            self._query('create', BenchBot.RouteType.RESULTS)
+            'results': (self._query('create', BenchBot.RouteType.RESULTS)
+                        if self.config['results'] else {})
         }
 
     def next_scene(self):
@@ -261,7 +258,7 @@ class BenchBot(object):
         # Bail if next is not a valid operation
         if (self._query('is_collided',
                         BenchBot.RouteType.ROBOT)['is_collided']):
-            raise RuntimeError("Collision stated detected for robot; "
+            raise RuntimeError("Collision state detected for robot; "
                                "cannot proceed to next scene")
 
         # Move to the next scene
@@ -304,11 +301,13 @@ class BenchBot(object):
             for r in self._query('/', BenchBot.RouteType.RESULTS)
         }
 
-    def run(self):
+    def run(self, agent=None):
         """Helper function that runs the robot according to the agent given.
         Generally, you should use this function and implement your object in
         your own custom agent class. 
         """
+        if agent is not None:
+            self.set_agent(agent)
         if self.agent is None:
             raise RuntimeError(
                 "Can't call Benchbot.run() without an agent attached. Either "
@@ -331,6 +330,19 @@ class BenchBot(object):
         # We've made it to the end, we should save our results!
         self.agent.save_result(self.result_filename, self.empty_results(),
                                self.results_functions())
+
+    def set_agent(self, agent):
+        """Updates the current agent, and starts its connection with a BenchBot
+        Supervisor if requested"""
+        if agent is None:
+            self.agent = None
+            return
+
+        if agent is not None and not isinstance(agent, Agent):
+            raise ValueError("BenchBot received an agent of type '%s' "
+                             "which is not an instance of '%s'." %
+                             (agent.__class__.__name__, Agent.__name__))
+        self.agent = agent
 
     def start(self):
         """Establishes a connect to the Supervisor, and then uses this to
