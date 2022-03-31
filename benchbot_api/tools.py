@@ -1,9 +1,23 @@
 import matplotlib as mpl
+
 mpl.use(
     'TkAgg'
 )  # Default renderer Gtk3Agg had all sorts of stalling issues in matplotlib>=3.2
 
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except ImportError as e:
+    import traceback
+    import warnings
+    warnings.formatwarning = (
+        lambda msg, category, *args, **kwargs: '%s: %s\n' %
+        (category.__name__, msg))
+    warnings.warn(
+        "Failed to import PyPlot from Matplotlib. Plotting functionality "
+        "will error. Traceback is below:\n\n%s" % traceback.format_exc(),
+        RuntimeWarning)
+    plt = None
+
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 from scipy.spatial.transform import Rotation as Rot
