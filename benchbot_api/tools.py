@@ -38,7 +38,7 @@ def __plot_frame(ax, frame_name, frame_data):
         orientation = frame_data['rotation_rpy']
     else:
         orientation = [0, 0, 0]
-    rot_obj = Rot.from_euler('XYZ', orientation)
+    rot_obj = Rot.from_euler('xyz', orientation)
     x_vector = rot_obj.apply([1, 0, 0])
     y_vector = rot_obj.apply([0, 1, 0])
     z_vector = rot_obj.apply([0, 0, 1])
