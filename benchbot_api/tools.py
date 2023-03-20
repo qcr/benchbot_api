@@ -263,7 +263,7 @@ class ObservationVisualiser(object):
                     poses_plt_num_h,
                     projection='3d')
 
-        self.fig.canvas.set_window_title("Agent Observations" + (
+        self.fig.canvas.manager.set_window_title("Agent Observations" + (
             "" if step_count is None else " (step # %d)" % step_count))
 
         for plt_num, vis_type in enumerate(self.vis_list):
