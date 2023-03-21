@@ -30,7 +30,7 @@ SUPPORTED_OBSERVATIONS = [
 
 def __plot_frame(ax, frame_name, frame_data):
     # NOTE currently assume that everything has parent frame 'map'
-    L = 0.5
+    L = 0.25
     # TODO BUG: map has no rotation aspect, handling it here but it should
     # have a rotation.
     origin = frame_data['translation_xyz']
